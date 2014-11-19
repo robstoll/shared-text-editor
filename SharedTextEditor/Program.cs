@@ -11,53 +11,39 @@ namespace SharedTextEditor
 
     #region Service Interfaces
 
-    [ServiceContract(Namespace = "http://com.sharedtexteditor", CallbackContract = typeof(IChat))]
-    public interface IChat
+    [ServiceContract(Namespace = "http://com.sharedtexteditor", CallbackContract = typeof(ISharedTextEditor))]
+    public interface ISharedTextEditor
     {
         [OperationContract(IsOneWay = true)]
-        void Join(string Member);
+        void Connect(string member);
 
         [OperationContract(IsOneWay = true)]
-        void Chat(string Member, string Message);
+        void Chat(string member, string message);
 
         [OperationContract(IsOneWay = true)]
-        void Whisper(string Member, string MemberTo, string Message);
-
-        [OperationContract(IsOneWay = true)]
-        void Leave(string Member);
+        void Disconnect(string member);
 
         [OperationContract(IsOneWay = true)]
         void InitializeMesh();
 
         [OperationContract(IsOneWay = true)]
-        void SynchronizeMemberList(string Member);
+        void SynchronizeMemberList(string member);
     }
 
-    //this channel interface provides a multiple inheritence adapter for our channel factory
-    //that aggregates the two interfaces need to create the channel
-    public interface IChatChannel : IChat, IClientChannel
+    public interface ISharedTextEditorChannel : ISharedTextEditor, IClientChannel
     {
     }
-
     #endregion
 
     static class Program
     {
 
-
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
         [STAThread]
         static void Main()
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
-
-           
+            Application.Run(new SharedTextEditor());
         }
-
-     
     }
 }
