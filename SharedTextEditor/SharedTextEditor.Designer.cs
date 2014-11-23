@@ -28,25 +28,18 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.txtDoc = new System.Windows.Forms.TextBox();
             this.btnConnect = new System.Windows.Forms.Button();
             this.txtId = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.lblNumber = new System.Windows.Forms.Label();
+            this.btnCreate = new System.Windows.Forms.Button();
+            this.btnOpen = new System.Windows.Forms.Button();
+            this.tabControl = new System.Windows.Forms.TabControl();
             this.SuspendLayout();
-            // 
-            // txtDoc
-            // 
-            this.txtDoc.Location = new System.Drawing.Point(12, 40);
-            this.txtDoc.Multiline = true;
-            this.txtDoc.Name = "txtDoc";
-            this.txtDoc.Size = new System.Drawing.Size(648, 410);
-            this.txtDoc.TabIndex = 0;
-            this.txtDoc.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
             // 
             // btnConnect
             // 
-            this.btnConnect.Location = new System.Drawing.Point(135, 11);
+            this.btnConnect.Location = new System.Drawing.Point(12, 10);
             this.btnConnect.Name = "btnConnect";
             this.btnConnect.Size = new System.Drawing.Size(75, 23);
             this.btnConnect.TabIndex = 1;
@@ -56,7 +49,8 @@
             // 
             // txtId
             // 
-            this.txtId.Location = new System.Drawing.Point(13, 13);
+            this.txtId.Enabled = false;
+            this.txtId.Location = new System.Drawing.Point(114, 12);
             this.txtId.Name = "txtId";
             this.txtId.Size = new System.Drawing.Size(100, 20);
             this.txtId.TabIndex = 2;
@@ -79,16 +73,48 @@
             this.lblNumber.TabIndex = 4;
             this.lblNumber.Text = "10";
             // 
+            // btnCreate
+            // 
+            this.btnCreate.Enabled = false;
+            this.btnCreate.Location = new System.Drawing.Point(220, 10);
+            this.btnCreate.Name = "btnCreate";
+            this.btnCreate.Size = new System.Drawing.Size(52, 23);
+            this.btnCreate.TabIndex = 5;
+            this.btnCreate.Text = "Create";
+            this.btnCreate.UseVisualStyleBackColor = true;
+            this.btnCreate.Click += new System.EventHandler(this.btnCreate_Click);
+            // 
+            // btnOpen
+            // 
+            this.btnOpen.Enabled = false;
+            this.btnOpen.Location = new System.Drawing.Point(278, 9);
+            this.btnOpen.Name = "btnOpen";
+            this.btnOpen.Size = new System.Drawing.Size(52, 23);
+            this.btnOpen.TabIndex = 6;
+            this.btnOpen.Text = "Open";
+            this.btnOpen.UseVisualStyleBackColor = true;
+            this.btnOpen.Click += new System.EventHandler(this.btnOpen_Click);
+            // 
+            // tabControl
+            // 
+            this.tabControl.Location = new System.Drawing.Point(13, 40);
+            this.tabControl.Name = "tabControl";
+            this.tabControl.SelectedIndex = 0;
+            this.tabControl.Size = new System.Drawing.Size(647, 410);
+            this.tabControl.TabIndex = 7;
+            // 
             // SharedTextEditor
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(672, 462);
+            this.Controls.Add(this.tabControl);
+            this.Controls.Add(this.btnOpen);
+            this.Controls.Add(this.btnCreate);
             this.Controls.Add(this.lblNumber);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.txtId);
             this.Controls.Add(this.btnConnect);
-            this.Controls.Add(this.txtDoc);
             this.Name = "SharedTextEditor";
             this.Text = "Shared Text Editor";
             this.ResumeLayout(false);
@@ -98,11 +124,13 @@
 
         #endregion
 
-        private System.Windows.Forms.TextBox txtDoc;
         private System.Windows.Forms.Button btnConnect;
         private System.Windows.Forms.TextBox txtId;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label lblNumber;
+        private System.Windows.Forms.Button btnCreate;
+        private System.Windows.Forms.Button btnOpen;
+        private System.Windows.Forms.TabControl tabControl;
     }
 }
 

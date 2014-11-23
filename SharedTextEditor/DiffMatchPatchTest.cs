@@ -1086,44 +1086,44 @@ namespace nicTest {
       dmp.Patch_DeleteThreshold = 0.5f;
       List<Patch> patches;
       patches = dmp.patch_make("", "");
-      Object[] results = dmp.patch_apply(patches, "Hello world.");
-      bool[] boolArray = (bool[])results[1];
-      string resultStr = results[0] + "\t" + boolArray.Length;
+      Tuple<string, bool[]> results = dmp.patch_apply(patches, "Hello world.");
+      bool[] boolArray = results.Item2;
+      string resultStr = results.Item1 + "\t" + boolArray.Length;
       Assert.AreEqual("Hello world.\t0", resultStr, "patch_apply: Null case.");
 
       patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
       results = dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.");
-      boolArray = (bool[])results[1];
-      resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+      boolArray = results.Item2;
+      resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
       Assert.AreEqual("That quick brown fox jumped over a lazy dog.\tTrue\tTrue", resultStr, "patch_apply: Exact match.");
 
       results = dmp.patch_apply(patches, "The quick red rabbit jumps over the tired tiger.");
-      boolArray = (bool[])results[1];
-      resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+      boolArray = results.Item2;
+      resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
       Assert.AreEqual("That quick red rabbit jumped over a tired tiger.\tTrue\tTrue", resultStr, "patch_apply: Partial match.");
 
       results = dmp.patch_apply(patches, "I am the very model of a modern major general.");
-      boolArray = (bool[])results[1];
-      resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+      boolArray = results.Item2;
+      resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
       Assert.AreEqual("I am the very model of a modern major general.\tFalse\tFalse", resultStr, "patch_apply: Failed match.");
 
       patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
       results = dmp.patch_apply(patches, "x123456789012345678901234567890-----++++++++++-----123456789012345678901234567890y");
-      boolArray = (bool[])results[1];
-      resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+      boolArray = results.Item2;
+      resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
       Assert.AreEqual("xabcy\tTrue\tTrue", resultStr, "patch_apply: Big delete, small change.");
 
       patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
       results = dmp.patch_apply(patches, "x12345678901234567890---------------++++++++++---------------12345678901234567890y");
-      boolArray = (bool[])results[1];
-      resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+      boolArray = results.Item2;
+      resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
       Assert.AreEqual("xabc12345678901234567890---------------++++++++++---------------12345678901234567890y\tFalse\tTrue", resultStr, "patch_apply: Big delete, big change 1.");
 
       dmp.Patch_DeleteThreshold = 0.6f;
       patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
       results = dmp.patch_apply(patches, "x12345678901234567890---------------++++++++++---------------12345678901234567890y");
-      boolArray = (bool[])results[1];
-      resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+      boolArray = results.Item2;
+      resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
       Assert.AreEqual("xabcy\tTrue\tTrue", resultStr, "patch_apply: Big delete, big change 2.");
       dmp.Patch_DeleteThreshold = 0.5f;
 
@@ -1131,8 +1131,8 @@ namespace nicTest {
       dmp.Match_Distance = 0;
       patches = dmp.patch_make("abcdefghijklmnopqrstuvwxyz--------------------1234567890", "abcXXXXXXXXXXdefghijklmnopqrstuvwxyz--------------------1234567YYYYYYYYYY890");
       results = dmp.patch_apply(patches, "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567890");
-      boolArray = (bool[])results[1];
-      resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+      boolArray = results.Item2;
+      resultStr = results.Item1 + "\t" + boolArray[0] + "\t" + boolArray[1];
       Assert.AreEqual("ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tFalse\tTrue", resultStr, "patch_apply: Compensate for failed patch.");
       dmp.Match_Threshold = 0.5f;
       dmp.Match_Distance = 1000;
@@ -1149,20 +1149,20 @@ namespace nicTest {
 
       patches = dmp.patch_make("", "test");
       results = dmp.patch_apply(patches, "");
-      boolArray = (bool[])results[1];
-      resultStr = results[0] + "\t" + boolArray[0];
+      boolArray = results.Item2;
+      resultStr = results.Item1 + "\t" + boolArray[0];
       Assert.AreEqual("test\tTrue", resultStr, "patch_apply: Edge exact match.");
 
       patches = dmp.patch_make("XY", "XtestY");
       results = dmp.patch_apply(patches, "XY");
-      boolArray = (bool[])results[1];
-      resultStr = results[0] + "\t" + boolArray[0];
+      boolArray = results.Item2;
+      resultStr = results.Item1 + "\t" + boolArray[0];
       Assert.AreEqual("XtestY\tTrue", resultStr, "patch_apply: Near edge exact match.");
 
       patches = dmp.patch_make("y", "y123");
       results = dmp.patch_apply(patches, "x");
-      boolArray = (bool[])results[1];
-      resultStr = results[0] + "\t" + boolArray[0];
+      boolArray = results.Item2;
+      resultStr = results.Item1 + "\t" + boolArray[0];
       Assert.AreEqual("x123\tTrue", resultStr, "patch_apply: Edge partial match.");
     }
 

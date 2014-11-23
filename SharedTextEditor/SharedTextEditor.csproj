@@ -38,6 +38,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
@@ -52,6 +53,8 @@
   <ItemGroup>
     <Compile Include="DiffMatchPatch.cs" />
     <Compile Include="DiffMatchPatchTest.cs" />
+    <Compile Include="Document.cs" />
+    <Compile Include="ISharedTextEditor.cs" />
     <Compile Include="SharedTextEditor.cs">
       <SubType>Form</SubType>
     </Compile>

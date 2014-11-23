@@ -1916,9 +1916,9 @@ namespace DiffMatchPatch {
      * @return Two element Object array, containing the new text and an array of
      *      bool values.
      */
-    public Object[] patch_apply(List<Patch> patches, string text) {
+    public Tuple<string, bool[]> patch_apply(List<Patch> patches, string text) {
       if (patches.Count == 0) {
-        return new Object[] { text, new bool[0] };
+        return new Tuple<string, bool[]>( text, new bool[0] );
       }
 
       // Deep copy the patches so that no changes are made to originals.
@@ -2014,7 +2014,7 @@ namespace DiffMatchPatch {
       // Strip the padding off.
       text = text.Substring(nullPadding.Length, text.Length
           - 2 * nullPadding.Length);
-      return new Object[] { text, results };
+      return new Tuple<string, bool[]>( text, results );
     }
 
     /**
