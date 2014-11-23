@@ -54,7 +54,8 @@ namespace SharedTextEditor
         private readonly HashSet<string> _pendingDocumentRequests = new HashSet<string>();
 
         private bool _connected;
-        private const int OwnMemberId = 0;
+        private const int OWN_MEMBER_ID = 0;
+        private const int SUPPORTED_NUM_OF_REACTIVE_UPDATES = 20;
 
         #endregion
 
@@ -214,13 +215,34 @@ namespace SharedTextEditor
         private void AddDocument(DocumentDto dto)
         {
             var hash = GetHash(dto.Content);
-            _documents.Add(dto.DocumentId, new Document
+            var document = new Document
             {
                 Id = dto.DocumentId,
                 CurrentHash = hash,
                 Owner = dto.Owner,
                 Content = "",
-                MyMemberId = dto.MyMemberId
+                MyMemberId = dto.MyMemberId,
+            };
+            if (dto.MyMemberId == OWN_MEMBER_ID)
+            {
+                AddRevision(0, document, new UpdateDto
+                {
+                    MemberId = OWN_MEMBER_ID,
+                    PreviousHash = new byte[]{},
+                    NewHash = document.CurrentHash,
+                    Patch = new List<Patch>(),
+                });
+            }
+            _documents.Add(dto.DocumentId, document);
+        }
+
+        private static void AddRevision(int id, Document document, UpdateDto updateDto)
+        {
+            document.AddRevision(new Revision
+            {
+                Id = id,
+                Content = document.Content,
+                UpdateDto = updateDto
             });
         }
 
@@ -248,23 +270,97 @@ namespace SharedTextEditor
             }
         }
 
-        private void CreatePatchForUpdate(Document document, UpdateDto dto)
+        private void CreatePatchForUpdate(Document document, UpdateDto updateDto)
         {
-            if (document.CurrentHash == dto.PreviousHash)
+            var currentRevision = document.GetRevision(document.CurrentHash);
+            var lastUpdate = currentRevision.UpdateDto;
+            var currentHash = document.CurrentHash;
+
+            bool creationSucessfull = false;
+
+            if (currentHash == updateDto.PreviousHash || 
+                (lastUpdate.PreviousHash == updateDto.PreviousHash && lastUpdate.MemberId < updateDto.MemberId))
             {
-                
+                var result = _diffMatchPatch.patch_apply(updateDto.Patch, document.Content);
+                if (result.Item2.All(x => x))
+                {
+                    document.CurrentHash = GetHash(result.Item1);
+                    document.Content = result.Item1;
+                    updateDto.NewHash = document.CurrentHash;
+                    creationSucessfull = true;
+                }
             }
             else
             {
-                //TODO search old commit
+                var revision = document.GetRevision(updateDto.PreviousHash);
+                if (revision.Id + SUPPORTED_NUM_OF_REACTIVE_UPDATES < currentRevision.Id)
+                {
+                    var nextRevision = document.GetRevision(revision.Id + 1);
+                    //move to next revision as long as 
+                    while (
+                        nextRevision.UpdateDto.PreviousHash == updateDto.PreviousHash
+                        &&  updateDto.MemberId > nextRevision.UpdateDto.MemberId 
+                        && nextRevision.Id < currentRevision.Id)
+                    {
+                        revision = nextRevision;
+                        nextRevision =  document.GetRevision(nextRevision.Id + 1);
+                    }
+
+                    var content = revision.Content;
+                    var tmpRevision = revision;
+                    var patch = updateDto.Patch;
+
+                    //apply all patches on top of the found revision
+                    while (tmpRevision.Id <= currentRevision.Id)
+                    {
+                        var result = _diffMatchPatch.patch_apply(patch, content);
+                        if (result.Item2.All(x => x))
+                        {
+                            content = result.Item1;
+                            if (tmpRevision.Id == currentRevision.Id)
+                            {
+                                break;
+                            }
+                            tmpRevision = document.GetRevision(tmpRevision.Id + 1);
+                            patch = tmpRevision.UpdateDto.Patch;
+                        }
+                        else
+                        {
+                            //TODO error handling
+                        }
+                    }
+
+                    document.CurrentHash = GetHash(content);
+                    document.Content = content;
+                    updateDto.Patch = _diffMatchPatch.patch_make(currentRevision.Content, content);
+                    updateDto.NewHash = document.CurrentHash;
+                    creationSucessfull = true;
+                }
             }
 
-            //Is not own document
-            if (dto.MemberId != OwnMemberId)
+            if (creationSucessfull)
             {
-                //TODO server/client communication -> send Acknowledgement to owner
+                AddRevision(++currentRevision.Id, document, updateDto);
+
+                //Is not own document
+                if (updateDto.MemberId != OWN_MEMBER_ID)
+                {
+                    var acknowledgeDto = new AcknowledgeDto
+                    {
+                        //TODO verify whether it should be currentHash or updateDto.PreviousHash
+                        PreviousHash = currentHash,
+                        NewHash = document.CurrentHash,
+                        DocumentId = document.Id
+                    };
+
+                    //TODO server/client communication -> send Acknowledgement to owner
+                }
+                //TODO server/client communication -> send Update to others
             }
-            //TODO server/client communication -> send Update to others
+            else if (updateDto.MemberId != OWN_MEMBER_ID)
+            {
+                //TODO error handling -> inform client, shall reload the document
+            }
         }
 
         private void ApplyUpdate(Document document, UpdateDto dto)
@@ -481,7 +577,7 @@ namespace SharedTextEditor
             };
 
             //I am the owner?
-            if (document.MyMemberId != OwnMemberId)
+            if (document.MyMemberId != OWN_MEMBER_ID)
             {
                 CreatePatchForUpdate(document, updateDto);
             }
@@ -514,7 +610,7 @@ namespace SharedTextEditor
                 {
                     Content="",
                     DocumentId = documentId,
-                    MyMemberId = OwnMemberId,
+                    MyMemberId = OWN_MEMBER_ID,
                     Owner = _memberName
                 });
             }
