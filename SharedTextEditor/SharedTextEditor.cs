@@ -1,513 +1,45 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Net;
-using System.Security.Cryptography;
-using System.ServiceModel;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using DiffMatchPatch;
+using System.Linq;
 
 namespace SharedTextEditor
 {
-    public partial class SharedTextEditor : Form, ISharedTextEditorP2P, ISharedTextEditorC2S
+    public partial class SharedTextEditor : Form
     {
-        #region Instance Fields
-
-        //the chat member name
-        //TODO how to define MemberName? define a UserName ?
-        private readonly string _memberName = "UserName";
-
-        //the channel instance where we execute our service methods against
-        private ISharedTextEditorP2PChannel _participant;
-        //the instance context which in this case is our window since it is the service host
-        private InstanceContext _instanceContext;
-        //our binding transport for the p2p mesh
-        private NetPeerTcpBinding _binding;
-        //the factory to create our chat channel
-        private ChannelFactory<ISharedTextEditorP2PChannel> _channelFactory;
-        //an interface provided by the channel exposing events to indicate
-        //when we have _connected or disconnected from the mesh
-        private IOnlineStatus _statusHandler;
-        //a generic delegate to execute a thread against that accepts no args
-        private delegate void NoArgDelegate();
-
-        private delegate void StringDelegate(string value);
-
-        private readonly object lockObject = new Object();
-
-        private readonly SHA1 _sha1 = new SHA1CryptoServiceProvider();
-        private readonly diff_match_patch _diffMatchPatch = new diff_match_patch();
-
-        private readonly HashSet<string> _connectedMembers = new HashSet<string>();
-
-        private readonly Dictionary<string, Document> _documents = new Dictionary<string, Document>();
         private readonly Dictionary<string, TextBox> _textBoxes = new Dictionary<string, TextBox>();
         private readonly Dictionary<string, TabPage> _tabPages = new Dictionary<string, TabPage>();
 
-        private readonly HashSet<string> _pendingDocumentRequests = new HashSet<string>();
-
+        private readonly string _memberName;
         private bool _connected;
-        private const int OWN_MEMBER_ID = 0;
-        private const int SUPPORTED_NUM_OF_REACTIVE_UPDATES = 20;
+        
 
-        #endregion
-
-        public SharedTextEditor()
+        public SharedTextEditor(string memberName)
         {
             InitializeComponent();
+            _memberName = memberName;
         }
 
-        ~SharedTextEditor()
-        {
-            _participant.Dispose();
-        }
-
-        #region WCF Methods
-
-        //this method gets called from a background thread to 
-        //connect the service client to the p2p mesh specified
-        //by the binding info in the app.config
-        private void ConnectToMesh()
-        {
-            _connected = true;
-
-            //since this window is the service behavior use it as the instance context
-            _instanceContext = new InstanceContext(this);
-
-            //use the binding from the app.config with default settings
-            _binding = new NetPeerTcpBinding("SharedTextEditorBinding");
-
-            //create a new channel based off of our composite interface "IChatChannel" and the 
-            //endpoint specified in the app.config
-            _channelFactory = new DuplexChannelFactory<ISharedTextEditorP2PChannel>(_instanceContext,
-                "SharedTextEditorEndpointP2P");
-            _participant = _channelFactory.CreateChannel();
-
-            //the next 3 lines setup the event handlers for handling online/offline events
-            //in the MS P2P world, online/offline is defined as follows:
-            //Online: the client is _connected to one or more peers in the mesh
-            //Offline: the client is all alone in the mesh
-            _statusHandler = _participant.GetProperty<IOnlineStatus>();
-            _statusHandler.Online += new EventHandler(ostat_Online);
-            _statusHandler.Offline += new EventHandler(ostat_Offline);
-
-            //this is an empty unhandled method on the service interface.
-            //why? because for some reason p2p clients don't try to connect to the mesh
-            //until the first service method call.  so to facilitate connecting i call this method
-            //to get the ball rolling.
-            _participant.InitializeMesh();
-        }
-
-        #endregion
-
-        #region IOnlineStatus Event Handlers
-
-        private void ostat_Offline(object sender, EventArgs e)
-        {
-            // we could update a status bar or animate an icon to 
-            //indicate to the user they have disconnected from the mesh
-
-            int i = 0;
-        }
-
-        private void ostat_Online(object sender, EventArgs e)
-        {
-            //TODO how to distinguish which members are editing a certain document?
-
-            //broadcasting a join method call to the mesh members
-            _participant.Connect(_memberName);
-        }
-
-        #endregion
-
-        #region ISharedTextEditorP2P Members
-
-        public void Connect(string member)
-        {
-            _connectedMembers.Add(member);
-            UpdateNumberOfEditors();
-            _participant.SynchronizeMemberList(_memberName);
-        }
-
-        public void Disconnect(string member)
-        {
-            _connectedMembers.Remove(member);
-            UpdateNumberOfEditors();
-        }
-
-
-        public void InitializeMesh()
-        {
-            //do nothing
-        }
-
-        public void UpdateNumberOfEditors()
-        {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new NoArgDelegate(UpdateNumberOfEditors));
-                return;
-            }
-
-            lblNumber.Text = _connectedMembers.Count.ToString();
-        }
-
-
-        public void SynchronizeMemberList(string member)
-        {
-            _connectedMembers.Add(member);
-            UpdateNumberOfEditors();
-        }
-
-        public void FindDocument(string documentId)
-        {
-            //Is it our document? then we inform client about it
-            if (_documents[documentId].Owner == _memberName)
-            {
-                //TODO inform client about the document
-            }
-        }
-
-        #endregion
-
-        #region ISharedTextEditorC2S members
 
         public void MemberHasDocument(string documentId, string memberName)
         {
-            //we ignore requests if we are not waiting for such a document
-            if (_pendingDocumentRequests.Contains(documentId))
-            {
-
-            }
+            //TODO 
         }
 
-        public void DocumentRequest(string documentId)
+        private delegate void IntDelegate(int number);
+        public void UpdateNumberOfEditors(int number)
         {
-            //Is it our document? then we send the document to the requesting client
-            if (_documents[documentId].Owner == _memberName)
+            if (InvokeRequired)
             {
-                //TODO send document to client
+                BeginInvoke(new IntDelegate(UpdateNumberOfEditors));
+                return;
             }
-            else
-            {
-                //TODO error handling -> document closed -> inform clients
-            }
+
+            lblNumber.Text = number.ToString();
         }
-
-        public void OpenDocument(DocumentDto dto)
-        {
-            //we ignore requests if we are not waiting for such a document
-            if (_pendingDocumentRequests.Contains(dto.DocumentId))
-            {
-                AddDocument(dto);
-                UpdateText(dto.DocumentId, dto.Content);
-                _pendingDocumentRequests.Remove(dto.DocumentId);
-            }
-        }
-
-        private void AddDocument(DocumentDto dto)
-        {
-            var hash = GetHash(dto.Content);
-            var document = new Document
-            {
-                Id = dto.DocumentId,
-                CurrentHash = hash,
-                Owner = dto.Owner,
-                Content = "",
-                MyMemberId = dto.MyMemberId,
-            };
-            if (dto.MyMemberId == OWN_MEMBER_ID)
-            {
-                AddRevision(0, document, new UpdateDto
-                {
-                    MemberId = OWN_MEMBER_ID,
-                    PreviousHash = new byte[]{},
-                    NewHash = document.CurrentHash,
-                    Patch = new List<Patch>(),
-                });
-            }
-            _documents.Add(dto.DocumentId, document);
-        }
-
-        private static void AddRevision(int id, Document document, UpdateDto updateDto)
-        {
-            document.AddRevision(new Revision
-            {
-                Id = id,
-                Content = document.Content,
-                UpdateDto = updateDto
-            });
-        }
-
-        private byte[] GetHash(string content)
-        {
-            return _sha1.ComputeHash(Encoding.UTF8.GetBytes(content));
-        }
-
-
-        public void UpdateRequest(UpdateDto dto)
-        {
-            //do we know such a document?
-            if (_documents.ContainsKey(dto.DocumentId))
-            {
-                var document = _documents[dto.DocumentId];
-                //I am the owner/server?
-                if (document.Owner == _memberName)
-                {
-                    CreatePatchForUpdate(document, dto);
-                }
-                else
-                {
-                    ApplyUpdate(document, dto);
-                }
-            }
-        }
-
-        private void CreatePatchForUpdate(Document document, UpdateDto updateDto)
-        {
-            var currentRevision = document.GetRevision(document.CurrentHash);
-            var lastUpdate = currentRevision.UpdateDto;
-            var currentHash = document.CurrentHash;
-
-            bool creationSucessfull = false;
-
-            if (currentHash == updateDto.PreviousHash || 
-                (lastUpdate.PreviousHash == updateDto.PreviousHash && lastUpdate.MemberId < updateDto.MemberId))
-            {
-                var result = _diffMatchPatch.patch_apply(updateDto.Patch, document.Content);
-                if (result.Item2.All(x => x))
-                {
-                    document.CurrentHash = GetHash(result.Item1);
-                    document.Content = result.Item1;
-                    updateDto.NewHash = document.CurrentHash;
-                    creationSucessfull = true;
-                }
-            }
-            else
-            {
-                var revision = document.GetRevision(updateDto.PreviousHash);
-                if (revision.Id + SUPPORTED_NUM_OF_REACTIVE_UPDATES < currentRevision.Id)
-                {
-                    var nextRevision = document.GetRevision(revision.Id + 1);
-                    //move to next revision as long as 
-                    while (
-                        nextRevision.UpdateDto.PreviousHash == updateDto.PreviousHash
-                        &&  updateDto.MemberId > nextRevision.UpdateDto.MemberId 
-                        && nextRevision.Id < currentRevision.Id)
-                    {
-                        revision = nextRevision;
-                        nextRevision =  document.GetRevision(nextRevision.Id + 1);
-                    }
-
-                    var content = revision.Content;
-                    var tmpRevision = revision;
-                    var patch = updateDto.Patch;
-
-                    //apply all patches on top of the found revision
-                    while (tmpRevision.Id <= currentRevision.Id)
-                    {
-                        var result = _diffMatchPatch.patch_apply(patch, content);
-                        if (result.Item2.All(x => x))
-                        {
-                            content = result.Item1;
-                            if (tmpRevision.Id == currentRevision.Id)
-                            {
-                                break;
-                            }
-                            tmpRevision = document.GetRevision(tmpRevision.Id + 1);
-                            patch = tmpRevision.UpdateDto.Patch;
-                        }
-                        else
-                        {
-                            //TODO error handling
-                        }
-                    }
-
-                    document.CurrentHash = GetHash(content);
-                    document.Content = content;
-                    updateDto.Patch = _diffMatchPatch.patch_make(currentRevision.Content, content);
-                    updateDto.NewHash = document.CurrentHash;
-                    creationSucessfull = true;
-                }
-            }
-
-            if (creationSucessfull)
-            {
-                AddRevision(++currentRevision.Id, document, updateDto);
-
-                //Is not own document
-                if (updateDto.MemberId != OWN_MEMBER_ID)
-                {
-                    var acknowledgeDto = new AcknowledgeDto
-                    {
-                        //TODO verify whether it should be currentHash or updateDto.PreviousHash
-                        PreviousHash = currentHash,
-                        NewHash = document.CurrentHash,
-                        DocumentId = document.Id
-                    };
-
-                    //TODO server/client communication -> send Acknowledgement to owner
-                }
-                //TODO server/client communication -> send Update to others
-            }
-            else if (updateDto.MemberId != OWN_MEMBER_ID)
-            {
-                //TODO error handling -> inform client, shall reload the document
-            }
-        }
-
-        private void ApplyUpdate(Document document, UpdateDto dto)
-        {
-            if (dto.PreviousHash == document.CurrentHash)
-            {
-                MergeUpdate(document, dto);
-            }
-            else if (document.OutOfSyncUpdate == null)
-            {
-                //update out of sync. Got an update which is not based on previous revision
-                document.OutOfSyncUpdate = dto;
-            }
-            else
-            {
-                //too many out of sync updates, need to re-open the document
-                ReOpenDocument(dto.DocumentId);
-            }
-        }
-
-        private void ReOpenDocument(string documentId)
-        {
-            //error has occured, need to re-open the document
-            _documents.Remove(documentId);
-            tabControl.TabPages.Remove(_tabPages[documentId]);
-            OpenTab(documentId);
-        }
-
-        private void MergeUpdate(Document document, UpdateDto updateDto)
-        {
-            var resultAppliedGivenUpdate = _diffMatchPatch.patch_apply(updateDto.Patch, document.Content);
-            if (CheckResultIsValidOtherwiseReOpen(resultAppliedGivenUpdate, updateDto.DocumentId))
-            {
-                if (MergePendingUpdate(document, updateDto, resultAppliedGivenUpdate))
-                {
-                    UpdateDocument(document, updateDto, resultAppliedGivenUpdate);
-                }
-            }
-
-            //check whether we have an out of sync update which is based on the given update (so we could apply it as well)
-            if (document.OutOfSyncUpdate.PreviousHash == document.CurrentHash)
-            {
-                var outOfSynUpdate = document.OutOfSyncUpdate;
-                document.OutOfSyncUpdate = null;
-                MergeUpdate(document, outOfSynUpdate);
-            }
-        }
-
-        private void UpdateDocument(Document document, UpdateDto updateDto, Tuple<string, bool[]> resultAppliedGivenUpdate)
-        {
-            document.Content = resultAppliedGivenUpdate.Item1;
-            document.CurrentHash = GetHash(document.Content);
-            if (document.CurrentHash != updateDto.NewHash)
-            {
-                //oho... should be the same, something went terribly wrong
-                ReOpenDocument(document.Id);
-            }
-        }
-
-        private bool MergePendingUpdate(Document document, UpdateDto updateDto, Tuple<string, bool[]> resultAppliedGivenUpdate)
-        {
-            var everythingOk = true;
-            var pendingUpdate = document.PendingUpdate;
-
-            if (pendingUpdate != null)
-            {
-                //will the pending update be applied after the given update?
-                if (pendingUpdate.MemberId > updateDto.MemberId)
-                {
-                    everythingOk = MergePendingUpdateAfterGivenUpdate(updateDto, pendingUpdate);
-                }
-                else if (pendingUpdate.MemberId < updateDto.MemberId)
-                {
-                    everythingOk = MergePendingUpdateBeforeGivenUpdate(document, updateDto, pendingUpdate, resultAppliedGivenUpdate);
-                }
-                else
-                {
-                    //TODO should we care? we should not get an update from our own
-                    everythingOk = false;
-                }
-            }
-            return everythingOk;
-        }
-
-        private bool MergePendingUpdateAfterGivenUpdate(UpdateDto updateDto, UpdateDto pendingUpdate)
-        {
-            // it's enough to set the previous hash to the hash of the given update
-            pendingUpdate.PreviousHash = updateDto.NewHash;
-
-            // Merge screen and update
-            var documentId = updateDto.DocumentId;
-            var result = _diffMatchPatch.patch_apply(updateDto.Patch, _textBoxes[documentId].Text);
-            var everythingOk = CheckResultIsValidOtherwiseReOpen(result, documentId);
-            if (everythingOk)
-            {
-                UpdateText(documentId, result.Item1);
-            }
-            return everythingOk;
-        }
-
-        private bool MergePendingUpdateBeforeGivenUpdate(Document document, UpdateDto updateDto, UpdateDto pendingUpdate, Tuple<string, bool[]> resultAppliedGivenUpdate)
-        {
-            // merging happens as follows, first apply pending patch on document, then given update = new content
-            // yet, since server has already applied given update we need to set pending's hash to the has of the update
-            // and we need to recompute the patch of the pending patch in order that we get the same text when the ACK follows
-            pendingUpdate.PreviousHash = updateDto.NewHash;
-
-            var documentId = updateDto.DocumentId;
-            var resultAppliedPendingUpdate = _diffMatchPatch.patch_apply(pendingUpdate.Patch, document.Content);
-            bool everythingOk = CheckResultIsValidOtherwiseReOpen(resultAppliedPendingUpdate, documentId);
-            if (everythingOk)
-            {
-                var resultAfterPatches = _diffMatchPatch.patch_apply(updateDto.Patch, resultAppliedPendingUpdate.Item1);
-                everythingOk = CheckResultIsValidOtherwiseReOpen(resultAfterPatches, documentId);
-                if (everythingOk)
-                {
-                    //compute new patch for pendin gupdate
-                    pendingUpdate.Patch = _diffMatchPatch.patch_make(resultAppliedGivenUpdate.Item1, resultAfterPatches.Item1);
-
-                    // Merge screen and update -> screen is built up on pending update, thus create patch pending -> screen
-                    // then apply patch to new content
-                    var mergePatch = _diffMatchPatch.patch_make(resultAppliedPendingUpdate.Item1, _textBoxes[documentId].Text);
-                    var resultMerge = _diffMatchPatch.patch_apply(mergePatch, resultAfterPatches.Item1);
-                    everythingOk = CheckResultIsValidOtherwiseReOpen(resultMerge, documentId);
-                    if (everythingOk)
-                    {
-                        UpdateText(documentId, resultMerge.Item1);
-                    }
-                }
-            }
-            return everythingOk;
-        }
-
-        private bool CheckResultIsValidOtherwiseReOpen(Tuple<string, bool[]> result, string documentId)
-        {
-            bool ok = result.Item2.All(x => x);
-            if (!ok)
-            {
-                ReOpenDocument(documentId);
-            }
-            return ok;
-        }
-
 
         private delegate void UpdateTextDelegate(string documentId, string content);
-
-        private void UpdateText(string documentId, string content)
+        public void UpdateText(string documentId, string content)
         {
             if (InvokeRequired)
             {
@@ -518,46 +50,27 @@ namespace SharedTextEditor
             _textBoxes[documentId].Text = content;
         }
 
-        public void AckRequest(AcknowledgeDto dto)
-        {
-            //do we know the document?
-            if (_documents.ContainsKey(dto.DocumentId))
-            {
-                var document = _documents[dto.DocumentId];
-                if (WeAreOwnerAndCorrespondsToPendingUpdate(dto, document))
-                {
-                    var result = _diffMatchPatch.patch_apply(document.PendingUpdate.Patch, document.Content);
-                    if (CheckResultIsValidOtherwiseReOpen(result, dto.DocumentId))
-                    {
-                        UpdateDocument(document, document.PendingUpdate, result);
-                    }
-                }
-            }
-        }
-
-        private bool WeAreOwnerAndCorrespondsToPendingUpdate(AcknowledgeDto dto, Document document)
-        {
-            return document.Owner != _memberName && document.PendingUpdate.PreviousHash == dto.PreviousHash;
-        }
-
-        #endregion
-
         private void btnConnect_Click(object sender, EventArgs e)
         {
             if(!_connected)
             {
+                _connected = true;
+                if (ConnectToP2P != null)
+                {
+                    ConnectToP2P(this, EventArgs.Empty);
+                }
                 txtId.Enabled = true;
                 btnOpen.Enabled = true;
                 btnCreate.Enabled = true;
                 btnConnect.Text = "Disconnect";
-
-                NoArgDelegate executor = ConnectToMesh;
-                executor.BeginInvoke(null, null);
             }
             else
             {
-                _participant.Disconnect(_memberName);
                 _connected = false;
+                if (DisconnectFromP2P != null)
+                {
+                    DisconnectFromP2P(this, EventArgs.Empty);
+                }
                 btnConnect.Text = "Connect";
                 btnCreate.Enabled = false;
                 btnOpen.Enabled = false;
@@ -567,23 +80,13 @@ namespace SharedTextEditor
 
         private void SendMessage(string documentId, string text)
         {
-            var document = _documents[documentId];
-            var updateDto = new UpdateDto
+            if (UpdateDocument != null)
             {
-                DocumentId = documentId,
-                PreviousHash = document.CurrentHash,
-                Patch = _diffMatchPatch.patch_make(document.Content, text),
-                MemberId = document.MyMemberId
-            };
-
-            //I am the owner?
-            if (document.MyMemberId != OWN_MEMBER_ID)
-            {
-                CreatePatchForUpdate(document, updateDto);
-            }
-            else
-            {
-                //TODO client/server communication -> send updateDto to server
+                UpdateDocument(this, new UpdateDocumentRequest
+                {
+                    DocumentId = documentId,
+                    NewContent = text
+                });
             }
         }
 
@@ -591,7 +94,7 @@ namespace SharedTextEditor
         {
             var ok = true;
             var documentId = txtId.Text;
-            if (_documents.ContainsKey(documentId))
+            if (_textBoxes.ContainsKey(documentId))
             {
                 //TODO ask if current document shall be closed
                 if (ok)
@@ -599,20 +102,21 @@ namespace SharedTextEditor
                     tabControl.TabPages.Remove(_tabPages[documentId]);
                     _tabPages.Remove(documentId);
                     _textBoxes.Remove(documentId);
-                    _documents.Remove(documentId);
+
+                    if (RemoveDocument != null)
+                    {
+                        RemoveDocument(this, documentId);
+                    }
                 }
             }
 
             if (ok)
             {
-                OpenTab(documentId);
-                AddDocument(new DocumentDto
+                if (CreateDocument != null)
                 {
-                    Content="",
-                    DocumentId = documentId,
-                    MyMemberId = OWN_MEMBER_ID,
-                    Owner = _memberName
-                });
+                    CreateDocument(this, documentId);
+                }
+                OpenTab(documentId);
             }
         }
 
@@ -645,8 +149,40 @@ namespace SharedTextEditor
                 Text = "Searching document with id " + documentId + ".\nPlease be patient..."
             });
             _tabPages.Add(documentId, tabPage);
-            _pendingDocumentRequests.Add(documentId);
-            _participant.FindDocument(documentId);
+
+            if (FindDocumentRequest != null)
+            {
+                FindDocumentRequest(this, documentId);
+            }
         }
+
+        public void CloseTab(string documentId)
+        {
+            tabControl.TabPages.Remove(_tabPages[documentId]);
+        }
+
+        public string GetText(string documentId)
+        {
+            if (_textBoxes.ContainsKey(documentId))
+            {
+                return _textBoxes[documentId].Text;
+            }
+            return null;
+        }
+
+        public event EventHandler<EventArgs> ConnectToP2P;
+        public event EventHandler<EventArgs> DisconnectFromP2P;
+        public event EventHandler<string> FindDocumentRequest;
+        public event EventHandler<string> CreateDocument;
+        public event EventHandler<string> RemoveDocument;
+        public event EventHandler<UpdateDocumentRequest> UpdateDocument;
+
     }
+
+    public class UpdateDocumentRequest
+    {
+        public string DocumentId { get; set; }
+        public string NewContent { get; set; }
+    }
+
 }

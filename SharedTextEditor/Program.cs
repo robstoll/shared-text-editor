@@ -12,11 +12,21 @@ namespace SharedTextEditor
     {
 
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
+            var memberName = "dummy";
+            if (args.Length == 1)
+            {
+                memberName = args[0];
+            }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new SharedTextEditor());
+
+            var editor = new SharedTextEditor(memberName);
+            var patchingLogic = new SharedTextEditorPatchingLogic(memberName, editor);
+            new SharedTextEditorP2PLogic(memberName, editor, patchingLogic);
+            
+            Application.Run(editor);
         }
     }
 }

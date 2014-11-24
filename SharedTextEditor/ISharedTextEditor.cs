@@ -46,6 +46,8 @@ namespace SharedTextEditor
 
         [OperationContract(IsOneWay = true)]
         void AckRequest(AcknowledgeDto dto);
+
+        void FindDocument(string documentId);
     }
 
     [DataContract(Namespace = "http://com.sharedtexteditor")]
