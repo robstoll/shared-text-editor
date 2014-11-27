@@ -48,7 +48,7 @@ namespace SharedTextEditor
 
         public Revision GetRevision(byte[] hash)
         {
-            return _revisionsByHash[hash];
+            return _revisionsByHash.ContainsKey(hash) ? _revisionsByHash[hash] : null;
         }
 
         public Revision GetRevision(int index)

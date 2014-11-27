@@ -23,6 +23,18 @@ namespace SharedTextEditor
 
         [OperationContract(IsOneWay = true)]
         void FindDocument(string documentId);
+
+        [OperationContract(IsOneWay = true)]
+        void DocumentDiscoveryResponse(DocumentDto document);
+
+        [OperationContract(IsOneWay = true)]
+        void UpdateRequest(UpdateDto dto);
+
+        [OperationContract(IsOneWay = true)]
+        void ForceReload(UpdateDto dto);
+
+        [OperationContract(IsOneWay = true)]
+        void AckRequest(AcknowledgeDto dto);
     }
 
     public interface ISharedTextEditorP2PChannel : ISharedTextEditorP2P, IClientChannel
@@ -58,9 +70,9 @@ namespace SharedTextEditor
 
         [DataMember]
         public string Content { get; set; }
-
+        [DataMember]
         public string Owner { get; set; }
-
+        [DataMember]
         public int MyMemberId { get; set; }
     }
 
@@ -79,10 +91,12 @@ namespace SharedTextEditor
 
 
     [DataContract(Namespace = "http://com.sharedtexteditor")]
+    [Serializable]
     public class UpdateDto
     {
         [DataMember]
         public int MemberId { get; set; }
+
 
         [DataMember]
         public string DocumentId { get; set; }

@@ -143,13 +143,15 @@ namespace SharedTextEditor
         private void btnOpen_Click(object sender, EventArgs e)
         {
             var documentId = txtId.Text;
-            var tabPage = new TabPage(documentId);
-            tabPage.Container.Add(new Label
-            {
-                Text = "Searching document with id " + documentId + ".\nPlease be patient..."
-            });
-            _tabPages.Add(documentId, tabPage);
+            //var tabPage = new TabPage(documentId);
+            //if (tabPage.Container != null)
+            //    tabPage.Container.Add(new Label
+            //    {
+            //        Text = "Searching document with id " + documentId + ".\nPlease be patient..."
+            //    });
+            //_tabPages.Add(documentId, tabPage);
 
+            OpenTab(documentId);
             if (FindDocumentRequest != null)
             {
                 FindDocumentRequest(this, documentId);

@@ -58,6 +58,7 @@ namespace DiffMatchPatch {
   /**
    * Class representing one diff operation.
    */
+  [Serializable]
   public class Diff {
     public Operation operation;
     // One of: INSERT, DELETE or EQUAL.

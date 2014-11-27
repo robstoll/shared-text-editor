@@ -14,7 +14,7 @@ namespace SharedTextEditor
         [STAThread]
         static void Main(string[] args)
         {
-            var memberName = "dummy";
+            var memberName = new Guid().ToString();
             if (args.Length == 1)
             {
                 memberName = args[0];
@@ -23,8 +23,9 @@ namespace SharedTextEditor
             Application.SetCompatibleTextRenderingDefault(false);
 
             var editor = new SharedTextEditor(memberName);
-            var patchingLogic = new SharedTextEditorPatchingLogic(memberName, editor);
-            new SharedTextEditorP2PLogic(memberName, editor, patchingLogic);
+            //var patchingLogic = new SharedTextEditorPatchingLogic(memberName, editor);
+        
+            new SharedTextEditorP2PLogic(memberName, editor, null);
             
             Application.Run(editor);
         }
