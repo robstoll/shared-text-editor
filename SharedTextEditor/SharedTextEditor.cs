@@ -41,9 +41,19 @@ namespace SharedTextEditor
                 return;
             }
 
-            if (_textBoxes.ContainsKey(documentId))
+            if (_tabPages.ContainsKey(documentId))
             {
-                _textBoxes[documentId].Text = content;
+                if (_textBoxes.ContainsKey(documentId))
+                {
+                    _textBoxes[documentId].Text = content;
+                }
+                else
+                {
+                    //opened new document
+                    CloseTab(documentId);
+                    OpenTab(documentId);
+                    _textBoxes[documentId].Text = content;
+                }
             }
         }
 
@@ -138,8 +148,6 @@ namespace SharedTextEditor
         public void CloseDocument(string documentId)
         {
             CloseTab(documentId);
-            _tabPages.Remove(documentId);
-            _textBoxes.Remove(documentId);
 
             if (RemoveDocument != null)
             {
@@ -190,15 +198,22 @@ namespace SharedTextEditor
 
             if (ok)
             {
+                var tabPage = new TabPage(documentId)
+                {
+                    Name = documentId,
+                    Text = documentId,
+                };
+                tabControl.Controls.Add(tabPage);
+                tabControl.SelectedTab = tabPage;
 
-                var tabPage = new TabPage(documentId);
-                if (tabPage.Container != null)
-                    tabPage.Container.Add(new Label
-                    {
-                        Text = "Searching document with id " + documentId + ".\nPlease be patient..."
-                    });
+                tabPage.Controls.Add(new Label
+                {
+                    Text = "\n Searching document with id " + documentId + "."
+                          +"\n Please be patient ...",
+                    Dock = DockStyle.Fill
+                });
+
                 _tabPages.Add(documentId, tabPage);
-
                 if (FindDocumentRequest != null)
                 {
                     FindDocumentRequest(this, documentId);
@@ -206,9 +221,13 @@ namespace SharedTextEditor
             }
         }
 
-        public void CloseTab(string documentId)
+        private delegate void StringDelegate(string documentId);
+
+        private void CloseTab(string documentId)
         {
             tabControl.TabPages.Remove(_tabPages[documentId]);
+            _tabPages.Remove(documentId);
+            _textBoxes.Remove(documentId);
         }
 
         public string GetText(string documentId)

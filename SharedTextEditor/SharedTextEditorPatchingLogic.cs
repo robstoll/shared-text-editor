@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.ServiceModel;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using DiffMatchPatch;
 
@@ -47,11 +48,11 @@ namespace SharedTextEditor
             //Am I the owner?
             if (document.Owner == _memberName)
             {
-                //TODO client/server communication -> send updateDto to server
+                CreatePatchForUpdate(document, updateDto);
             }
             else
             {
-                CreatePatchForUpdate(document, updateDto);
+                //TODO client/server communication -> send updateDto to server
             }
         }
 
@@ -84,6 +85,14 @@ namespace SharedTextEditor
 
         public void FindDocument(string documentId, string memberName)
         {
+            //TODO remove once the client/server logic is implemented - simulate the communication even though I am not the owner
+            OpenDocument(new DocumentDto
+            {
+                Content = "",
+                DocumentId = documentId,
+                Owner = "dummyOwner"
+            });
+
             //Is it our document? then we inform client about it
             if (_documents.ContainsKey(documentId) && _documents[documentId].Owner == _memberName)
             {
