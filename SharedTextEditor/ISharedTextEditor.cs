@@ -22,7 +22,7 @@ namespace SharedTextEditor
         void SynchronizeMemberList(string member);
 
         [OperationContract(IsOneWay = true)]
-        void FindDocument(string documentId, string memberName);
+        void FindDocument(string host, string documentId, string memberName);
 
     }
 
@@ -30,17 +30,20 @@ namespace SharedTextEditor
     {
     }
 
-     [ServiceContract(Namespace = "http://com.sharedtexteditor", CallbackContract = typeof(ISharedTextEditorP2P))]
+     [ServiceContract(Namespace = "http://com.sharedtexteditor")]
     public interface ISharedTextEditorC2S
     {
         [OperationContract(IsOneWay = true)]
-        void FindDocument(string documentId, string memberName);
+        void FindDocument(string host, string documentId, string memberName);
 
         [OperationContract(IsOneWay = true)]
         void UpdateRequest(UpdateDto dto);
 
         [OperationContract(IsOneWay = true)]
         void AckRequest(AcknowledgeDto dto);
+
+         [OperationContract(IsOneWay = true)]
+         void OpenDocument(DocumentDto dto);
 
          event EventHandler<string> FindDocumentRequest;
     }

@@ -43,6 +43,7 @@ namespace SharedTextEditor
         private readonly Dictionary<byte[], Revision> _revisionsByHash = new Dictionary<byte[], Revision>(new ByteArrayComparer());
 
         private readonly List<Revision> _revisionsByIndex = new List<Revision>();
+        private readonly HashSet<string> _editingHosts = new HashSet<string>(); 
 
         public Revision GetRevision(byte[] hash)
         {
@@ -63,6 +64,18 @@ namespace SharedTextEditor
             _revisionsByIndex.Add(revision);
             _revisionsByHash.Add(revision.UpdateDto.NewHash, revision);
         }
+
+        public bool AddEditor(string host)
+        {
+            return _editingHosts.Add(host);
+        }
+
+        public bool RemoveEditor(string host)
+        {
+            return _editingHosts.Remove(host);
+        }
+
+
     }
 
     public class Revision

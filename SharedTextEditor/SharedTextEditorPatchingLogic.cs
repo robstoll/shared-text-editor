@@ -10,6 +10,7 @@ using DiffMatchPatch;
 
 namespace SharedTextEditor
 {
+    [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, UseSynchronizationContext = false)]
     internal class SharedTextEditorPatchingLogic : ISharedTextEditorC2S
     {
         private const int SUPPORTED_NUM_OF_REACTIVE_UPDATES = 20;
@@ -17,8 +18,7 @@ namespace SharedTextEditor
         private readonly HashSet<string> _pendingDocumentRequests = new HashSet<string>();
         private readonly Dictionary<string, Document> _documents = new Dictionary<string, Document>();
         private readonly SHA1 _sha1 = new SHA1CryptoServiceProvider();
-        private readonly diff_match_patch _diffMatchPatch = new diff_match_patch();
-
+        private readonly diff_match_patch _diffMatchPatch = new diff_match_patch(); 
         private readonly string _memberName;
         private readonly SharedTextEditor _editor;
 
@@ -83,20 +83,32 @@ namespace SharedTextEditor
             }
         }
 
-        public void FindDocument(string documentId, string memberName)
+        public void FindDocument(string host, string documentId, string memberName)
         {
             //TODO remove once the client/server logic is implemented - simulate the communication even though I am not the owner
-            OpenDocument(new DocumentDto
-            {
-                Content = "",
-                DocumentId = documentId,
-                Owner = "dummyOwner"
-            });
+
 
             //Is it our document? then we inform client about it
             if (_documents.ContainsKey(documentId) && _documents[documentId].Owner == _memberName)
             {
-                //TODO inform client about the document
+                var binding = new NetTcpBinding();
+                var endpoint = new EndpointAddress(host + "/SharedTextEditor");
+                ChannelFactory<ISharedTextEditorC2S> cf = new ChannelFactory<ISharedTextEditorC2S>(binding, endpoint);
+
+
+                ISharedTextEditorC2S client = cf.CreateChannel();
+
+                _documents[documentId].AddEditor(host);
+
+                client.OpenDocument(new DocumentDto
+                {
+                    Content = _documents[documentId].Content,
+                    DocumentId = documentId,
+                    Owner = _memberName,
+                });
+
+                cf.Close();
+
             }
         }
 
