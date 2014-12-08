@@ -314,9 +314,11 @@ namespace SharedTextEditor
         {
             //error has occured, need to re-open the document
             _documents.Remove(documentId);
-            _editor.CloseTab(documentId);
-            
-            //TODO reload document from server
+            _editor.CloseDocument(documentId);
+            if (FindDocumentRequest!=null)
+            {
+                FindDocumentRequest(this, documentId);
+            }
         }
 
         private void MergeUpdate(Document document, UpdateDto updateDto)
@@ -451,5 +453,7 @@ namespace SharedTextEditor
             return document.Owner != _memberName && document.PendingUpdate.PreviousHash == dto.PreviousHash;
         }
 
+
+        public event EventHandler<string> FindDocumentRequest;
     }
 }

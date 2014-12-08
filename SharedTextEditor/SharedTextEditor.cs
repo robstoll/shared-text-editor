@@ -135,7 +135,7 @@ namespace SharedTextEditor
             return ok;
         }
 
-        private void CloseDocument(string documentId)
+        public void CloseDocument(string documentId)
         {
             CloseTab(documentId);
             _tabPages.Remove(documentId);

@@ -24,17 +24,6 @@ namespace SharedTextEditor
         [OperationContract(IsOneWay = true)]
         void FindDocument(string documentId, string memberName);
 
-        [OperationContract(IsOneWay = true)]
-        void DocumentDiscoveryResponse(DocumentDto document);
-
-        [OperationContract(IsOneWay = true)]
-        void UpdateRequest(UpdateDto dto);
-
-        [OperationContract(IsOneWay = true)]
-        void ForceReload(UpdateDto dto);
-
-        [OperationContract(IsOneWay = true)]
-        void AckRequest(AcknowledgeDto dto);
     }
 
     public interface ISharedTextEditorP2PChannel : ISharedTextEditorP2P, IClientChannel
@@ -53,6 +42,7 @@ namespace SharedTextEditor
         [OperationContract(IsOneWay = true)]
         void AckRequest(AcknowledgeDto dto);
 
+         event EventHandler<string> FindDocumentRequest;
     }
 
     [DataContract(Namespace = "http://com.sharedtexteditor")]
