@@ -54,7 +54,13 @@ namespace SharedTextEditor
             _editor.FindDocumentRequest += Editor_FindDocumentRequest;
             _editor.UpdateDocument += Editor_UpdateDocument;
             _editor.CreateDocument += Editor_CreateDocument;
+            _editor.RemoveDocument += Editor_RemoveDocument;
             _clientService = clientService;
+        }
+
+        private void Editor_RemoveDocument(object sender, string documentId)
+        {
+            _documents.Remove(documentId);
         }
 
         private void Editor_UpdateDocument(object sender, UpdateDocumentRequest request)

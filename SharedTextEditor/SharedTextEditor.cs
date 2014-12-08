@@ -92,23 +92,13 @@ namespace SharedTextEditor
 
         private void btnCreate_Click(object sender, EventArgs e)
         {
-            var ok = true;
             var documentId = txtId.Text;
-            if (_textBoxes.ContainsKey(documentId))
-            {
-                //TODO ask if current document shall be closed
-                if (ok)
-                {
-                    tabControl.TabPages.Remove(_tabPages[documentId]);
-                    _tabPages.Remove(documentId);
-                    _textBoxes.Remove(documentId);
-
-                    if (RemoveDocument != null)
-                    {
-                        RemoveDocument(this, documentId);
-                    }
-                }
-            }
+            var ok = ValidateDocumentId(
+                documentId,
+                "A document with the same id \"" + documentId +
+                "\" is already open. Do you want to close the current document and create a new one?",
+                "Close current document?"
+                );
 
             if (ok)
             {
@@ -117,6 +107,46 @@ namespace SharedTextEditor
                     CreateDocument(this, documentId);
                 }
                 OpenTab(documentId);
+            }
+        }
+
+        private bool ValidateDocumentId(string documentId, string message, string title)
+        {
+            
+            bool ok = !string.IsNullOrEmpty(documentId);
+            if (!ok)
+            {
+                MessageBox.Show(
+                    "Please provide a document Id - document id was empty.",
+                    "Document Id missing",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            } else if( _textBoxes.ContainsKey(documentId))
+            {
+                var result = MessageBox.Show(
+                    message,
+                    title,
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+                ok = result == DialogResult.Yes;
+                if (ok)
+                {
+                    CloseDocument(documentId);
+                }
+            }
+
+            return ok;
+        }
+
+        private void CloseDocument(string documentId)
+        {
+            CloseTab(documentId);
+            _tabPages.Remove(documentId);
+            _textBoxes.Remove(documentId);
+
+            if (RemoveDocument != null)
+            {
+                RemoveDocument(this, documentId);
             }
         }
 
@@ -130,10 +160,20 @@ namespace SharedTextEditor
             tabControl.Controls.Add(tabPage);
             tabControl.SelectedTab = tabPage;
 
-            var textBox = new TextBox();
+            var textBox = new TextBox
+            {
+                Multiline = true,
+                Dock = DockStyle.Fill
+            };
+            textBox.KeyDown += (sender, e) =>
+            {
+                if (e.Control && e.KeyCode == Keys.W)
+                {
+                    CloseDocument(documentId);
+                }
+            };
             textBox.TextChanged += (object sender, EventArgs e) => SendMessage(documentId, textBox.Text);
-            textBox.Multiline = true;
-            textBox.Dock = DockStyle.Fill;
+           
             tabPage.Controls.Add(textBox);
 
             _textBoxes.Add(documentId, textBox);
@@ -142,19 +182,31 @@ namespace SharedTextEditor
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
+            
             var documentId = txtId.Text;
-            //var tabPage = new TabPage(documentId);
-            //if (tabPage.Container != null)
-            //    tabPage.Container.Add(new Label
-            //    {
-            //        Text = "Searching document with id " + documentId + ".\nPlease be patient..."
-            //    });
-            //_tabPages.Add(documentId, tabPage);
+            var ok = ValidateDocumentId(
+                documentId,
+                "A document with the same id " + documentId +
+                " is already open. Do you want to close the current document and open the new one?",
+                "Close current document?"
+                );
 
-            OpenTab(documentId);
-            if (FindDocumentRequest != null)
+            if (ok)
             {
-                FindDocumentRequest(this, documentId);
+
+                //var tabPage = new TabPage(documentId);
+                //if (tabPage.Container != null)
+                //    tabPage.Container.Add(new Label
+                //    {
+                //        Text = "Searching document with id " + documentId + ".\nPlease be patient..."
+                //    });
+                //_tabPages.Add(documentId, tabPage);
+
+                OpenTab(documentId);
+                if (FindDocumentRequest != null)
+                {
+                    FindDocumentRequest(this, documentId);
+                }
             }
         }
 
