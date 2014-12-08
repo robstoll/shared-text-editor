@@ -20,12 +20,6 @@ namespace SharedTextEditor
             _memberName = memberName;
         }
 
-
-        public void MemberHasDocument(string documentId, string memberName)
-        {
-            //TODO 
-        }
-
         private delegate void IntDelegate(int number);
         public void UpdateNumberOfEditors(int number)
         {
@@ -47,7 +41,10 @@ namespace SharedTextEditor
                 return;
             }
 
-            _textBoxes[documentId].Text = content;
+            if (_textBoxes.ContainsKey(documentId))
+            {
+                _textBoxes[documentId].Text = content;
+            }
         }
 
         private void btnConnect_Click(object sender, EventArgs e)
@@ -194,15 +191,14 @@ namespace SharedTextEditor
             if (ok)
             {
 
-                //var tabPage = new TabPage(documentId);
-                //if (tabPage.Container != null)
-                //    tabPage.Container.Add(new Label
-                //    {
-                //        Text = "Searching document with id " + documentId + ".\nPlease be patient..."
-                //    });
-                //_tabPages.Add(documentId, tabPage);
+                var tabPage = new TabPage(documentId);
+                if (tabPage.Container != null)
+                    tabPage.Container.Add(new Label
+                    {
+                        Text = "Searching document with id " + documentId + ".\nPlease be patient..."
+                    });
+                _tabPages.Add(documentId, tabPage);
 
-                OpenTab(documentId);
                 if (FindDocumentRequest != null)
                 {
                     FindDocumentRequest(this, documentId);

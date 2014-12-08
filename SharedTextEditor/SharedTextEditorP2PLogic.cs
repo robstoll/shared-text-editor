@@ -52,9 +52,9 @@ namespace SharedTextEditor
             _editor.ConnectToP2P += Editor_ConnectToP2P;
             _editor.DisconnectFromP2P += Editor_DisconnectFromP2P;
             _editor.FindDocumentRequest += Editor_FindDocumentRequest;
-            _editor.UpdateDocument += Editor_UpdateDocument;
-            _editor.CreateDocument += Editor_CreateDocument;
-            _editor.RemoveDocument += Editor_RemoveDocument;
+            //_editor.UpdateDocument += Editor_UpdateDocument;
+            //_editor.CreateDocument += Editor_CreateDocument;
+            //_editor.RemoveDocument += Editor_RemoveDocument;
             _clientService = clientService;
         }
 
@@ -72,7 +72,7 @@ namespace SharedTextEditor
                 DocumentId = request.DocumentId,
                 PreviousHash = document.CurrentHash,
                 Patch = _diffMatchPatch.patch_make(document.Content, request.NewContent),
-                MemberId = document.MyMemberId,
+                //MemberId = document.MyMemberId,
                 //TODO set correct hash
                 NewHash = document.CurrentHash
             };
@@ -96,7 +96,7 @@ namespace SharedTextEditor
             {
                 Content = "",
                 DocumentId = documentId,
-                MyMemberId = 1,
+                //MyMemberId = 1,
                 Owner = _memberName
             });
         }
@@ -113,7 +113,7 @@ namespace SharedTextEditor
 
         private void Editor_FindDocumentRequest(object sender, string documentId)
         {
-            _p2pChannel.FindDocument(documentId);
+            _p2pChannel.FindDocument(documentId, _memberName);
         }
 
         //this method gets called from a background thread to 
@@ -203,7 +203,7 @@ namespace SharedTextEditor
                 CurrentHash = hash,
                 Owner = dto.Owner,
                 Content = dto.Content,
-                MyMemberId = dto.MyMemberId,
+                //MyMemberId = dto.MyMemberId,
             };
             if (dto.Owner.Equals(_memberName))
             {
@@ -213,7 +213,7 @@ namespace SharedTextEditor
                     Content = document.Content,
                     UpdateDto = new UpdateDto
                     {
-                        MemberId = 1,
+                        //MemberId = 1,
                         PreviousHash = new byte[] { },
                         NewHash = document.CurrentHash,
                         Patch = new List<Patch>(),
@@ -237,26 +237,24 @@ namespace SharedTextEditor
             return _sha1.ComputeHash(Encoding.UTF8.GetBytes(content));
         }
 
-        public void FindDocument(string documentId)
+        public void FindDocument(string documentId, string memberName)
         {
-            //_clientService.FindDocument(documentId);
+            //using client/server communication to send document to given memberName
+            _clientService.FindDocument(documentId, memberName);
 
-            if (_documents.ContainsKey(documentId) && _documents[documentId].Owner.Equals(_memberName))
-            {
-                var dto =  new DocumentDto
-                        {
-                            Content = _editor.GetText(documentId),
-                            DocumentId = documentId,
-                            MyMemberId = 1,
-                            Owner = _memberName
-                        };
+            //if (_documents.ContainsKey(documentId) && _documents[documentId].Owner.Equals(_memberName))
+            //{
+            //    var dto =  new DocumentDto
+            //            {
+            //                Content = _editor.GetText(documentId),
+            //                DocumentId = documentId,
+            //                //MyMemberId = 1,
+            //                Owner = _memberName
+            //            };
                 
-                _p2pChannel.DocumentDiscoveryResponse(dto);
-            }
-            
+            //    _p2pChannel.DocumentDiscoveryResponse(dto);
+            //}
         }
-
-
 
 
         public void DocumentDiscoveryResponse( DocumentDto document)
@@ -309,8 +307,8 @@ namespace SharedTextEditor
 
             bool creationSucessfull = false;
 
-            if (currentHash.SequenceEqual(updateDto.PreviousHash) ||
-                (lastUpdate.PreviousHash.SequenceEqual(updateDto.PreviousHash) && lastUpdate.MemberId < updateDto.MemberId))
+            if (currentHash.SequenceEqual(updateDto.PreviousHash))
+                //(lastUpdate.PreviousHash.SequenceEqual(updateDto.PreviousHash) && lastUpdate.MemberId < updateDto.MemberId))
             {
                 var result = _diffMatchPatch.patch_apply(updateDto.Patch, document.Content);
                 if (result.Item2.All(x => x))
@@ -330,7 +328,7 @@ namespace SharedTextEditor
                     //move to next revision as long as 
                     while (
                         nextRevision.UpdateDto.PreviousHash.SequenceEqual(updateDto.PreviousHash)
-                        && updateDto.MemberId > nextRevision.UpdateDto.MemberId
+                        //&& updateDto.MemberId > nextRevision.UpdateDto.MemberId
                         && nextRevision.Id < currentRevision.Id)
                     {
                         revision = nextRevision;
@@ -405,7 +403,7 @@ namespace SharedTextEditor
                     var newUpdateDto = new UpdateDto
                     {
                         DocumentId = document.Id,
-                        MemberId = updateDto.MemberId,
+                        //MemberId = updateDto.MemberId,
                         NewHash = document.CurrentHash,
                         PreviousHash = currentHash,
                         Patch = updateDto.Patch,
@@ -443,7 +441,7 @@ namespace SharedTextEditor
             //error has occured, need to re-open the document
             _documents.Remove(documentId);
             _editor.CloseTab(documentId);
-            _p2pChannel.FindDocument(documentId);
+            _p2pChannel.FindDocument(documentId, _memberName);
         }
 
         private void MergeUpdate(Document document, UpdateDto updateDto)
@@ -485,19 +483,19 @@ namespace SharedTextEditor
             if (pendingUpdate != null)
             {
                 //will the pending update be applied after the given update?
-                if (pendingUpdate.MemberId > updateDto.MemberId)
-                {
-                    everythingOk = MergePendingUpdateAfterGivenUpdate(updateDto, pendingUpdate);
-                }
-                else if (pendingUpdate.MemberId < updateDto.MemberId)
-                {
-                    everythingOk = MergePendingUpdateBeforeGivenUpdate(document, updateDto, pendingUpdate, resultAppliedGivenUpdate);
-                }
-                else
-                {
-                    //TODO should we care? we should not get an update from our own
-                    everythingOk = false;
-                }
+                //if (pendingUpdate.MemberId > updateDto.MemberId)
+                //{
+                //    everythingOk = MergePendingUpdateAfterGivenUpdate(updateDto, pendingUpdate);
+                //}
+                //else if (pendingUpdate.MemberId < updateDto.MemberId)
+                //{
+                //    everythingOk = MergePendingUpdateBeforeGivenUpdate(document, updateDto, pendingUpdate, resultAppliedGivenUpdate);
+                //}
+                //else
+                //{
+                //    //TODO should we care? we should not get an update from our own
+                //    everythingOk = false;
+                //}
             }
             return everythingOk;
         }
@@ -589,7 +587,7 @@ namespace SharedTextEditor
         {
             if (_documents.ContainsKey(dto.DocumentId))
             {
-                _p2pChannel.FindDocument(dto.DocumentId);
+                _p2pChannel.FindDocument(dto.DocumentId, _memberName);
             }
         }
     }

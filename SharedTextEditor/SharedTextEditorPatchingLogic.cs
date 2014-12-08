@@ -11,7 +11,6 @@ namespace SharedTextEditor
 {
     internal class SharedTextEditorPatchingLogic : ISharedTextEditorC2S
     {
-        private const int OWN_MEMBER_ID = 0;
         private const int SUPPORTED_NUM_OF_REACTIVE_UPDATES = 20;
 
         private readonly HashSet<string> _pendingDocumentRequests = new HashSet<string>();
@@ -42,17 +41,17 @@ namespace SharedTextEditor
                 DocumentId = request.DocumentId,
                 PreviousHash = document.CurrentHash,
                 Patch = _diffMatchPatch.patch_make(document.Content, request.NewContent),
-                MemberId = document.MyMemberId
+                MemberName = _memberName
             };
 
             //Am I the owner?
-            if (document.MyMemberId != OWN_MEMBER_ID)
+            if (document.Owner == _memberName)
             {
-                CreatePatchForUpdate(document, updateDto);
+                //TODO client/server communication -> send updateDto to server
             }
             else
             {
-                //TODO client/server communication -> send updateDto to server
+                CreatePatchForUpdate(document, updateDto);
             }
         }
 
@@ -67,7 +66,6 @@ namespace SharedTextEditor
             {
                 Content = "",
                 DocumentId = documentId,
-                MyMemberId = OWN_MEMBER_ID,
                 Owner = _memberName
             });
         }
@@ -84,34 +82,12 @@ namespace SharedTextEditor
             }
         }
 
-        public void FindDocument(string documentId)
+        public void FindDocument(string documentId, string memberName)
         {
             //Is it our document? then we inform client about it
-            if (_documents[documentId].Owner == _memberName)
+            if (_documents.ContainsKey(documentId) && _documents[documentId].Owner == _memberName)
             {
                 //TODO inform client about the document
-            }
-        }
-
-        public void MemberHasDocument(string documentId, string memberName)
-        {
-            //we ignore requests if we are not waiting for such a document
-            if (_pendingDocumentRequests.Contains(documentId))
-            {
-                _editor.MemberHasDocument(documentId, memberName);
-            }
-        }
-
-        public void DocumentRequest(string documentId)
-        {
-            //Is it our document? then we send the document to the requesting client
-            if (_documents[documentId].Owner == _memberName)
-            {
-                //TODO send document to client
-            }
-            else
-            {
-                //TODO error handling -> document closed -> inform clients
             }
         }
 
@@ -135,9 +111,8 @@ namespace SharedTextEditor
                 CurrentHash = hash,
                 Owner = dto.Owner,
                 Content = dto.Content,
-                MyMemberId = dto.MyMemberId,
             };
-            if (dto.MyMemberId == OWN_MEMBER_ID)
+            if (dto.Owner == _memberName)
             {
                 document.AddRevision(new Revision
                 {
@@ -145,7 +120,7 @@ namespace SharedTextEditor
                     Content = document.Content,
                     UpdateDto = new UpdateDto
                     {
-                        MemberId = OWN_MEMBER_ID,
+                        MemberName = _memberName,
                         PreviousHash = new byte[] { },
                         NewHash = document.CurrentHash,
                         Patch = new List<Patch>(),
@@ -186,8 +161,16 @@ namespace SharedTextEditor
 
             bool creationSucessfull = false;
 
+            //update is either based on current version 
+            //or on previous version where 
+            //   - the member which initialised the previous version was the owner itself
+            //   - or a member with a lower member name (and thus the given update will be applied afterwards)
+            //)
             if (currentHash.SequenceEqual(updateDto.PreviousHash) ||
-                (lastUpdate.PreviousHash.SequenceEqual(updateDto.PreviousHash) && lastUpdate.MemberId < updateDto.MemberId))
+                (lastUpdate.PreviousHash.SequenceEqual(updateDto.PreviousHash)
+                   && MemberOfFirstUpdateIsOwnerOrLowerMember(lastUpdate, updateDto)
+                )
+            )
             {
                 var result = _diffMatchPatch.patch_apply(updateDto.Patch, document.Content);
                 if (result.Item2.All(x => x))
@@ -196,7 +179,10 @@ namespace SharedTextEditor
                     document.Content = result.Item1;
                     updateDto.NewHash = document.CurrentHash;
                     creationSucessfull = true;
-                }       
+                }else
+                {
+                    //TODO error handling
+                }
             }
             else
             {
@@ -207,7 +193,7 @@ namespace SharedTextEditor
                     //move to next revision as long as 
                     while (
                         nextRevision.UpdateDto.PreviousHash.SequenceEqual(updateDto.PreviousHash)
-                        && updateDto.MemberId > nextRevision.UpdateDto.MemberId
+                        && MemberOfFirstUpdateIsNotOwnerAndHigherMember(updateDto, nextRevision.UpdateDto)
                         && nextRevision.Id < currentRevision.Id)
                     {
                         revision = nextRevision;
@@ -261,7 +247,7 @@ namespace SharedTextEditor
                     });
 
                     //Is not own document
-                    if (updateDto.MemberId != OWN_MEMBER_ID)
+                    if (IsNotUpdateForOwnDocument(updateDto))
                     {
                         var acknowledgeDto = new AcknowledgeDto
                         {
@@ -277,7 +263,7 @@ namespace SharedTextEditor
                     var newUpdateDto = new UpdateDto
                     {
                         DocumentId = document.Id,
-                        MemberId = updateDto.MemberId,
+                        MemberName = updateDto.MemberName,
                         NewHash = document.CurrentHash,
                         PreviousHash = currentHash,
                         Patch = updateDto.Patch,
@@ -285,10 +271,25 @@ namespace SharedTextEditor
                     //TODO server/client communication -> send Update to others
                 }
             }
-            else if (updateDto.MemberId != OWN_MEMBER_ID)
+            else if (IsNotUpdateForOwnDocument(updateDto))
             {
                 //TODO error handling -> inform client, shall reload the document
             }
+        }
+
+        private bool IsNotUpdateForOwnDocument(UpdateDto updateDto)
+        {
+            return updateDto.MemberName != _memberName;
+        }
+
+        private bool MemberOfFirstUpdateIsOwnerOrLowerMember(UpdateDto firstUpdateDto, UpdateDto secondUpdateDto)
+        {
+            return !IsNotUpdateForOwnDocument(firstUpdateDto) || string.Compare(firstUpdateDto.MemberName, secondUpdateDto.MemberName) < 0;
+        }
+
+        private bool MemberOfFirstUpdateIsNotOwnerAndHigherMember(UpdateDto firstUpdateDto, UpdateDto secondUpdateDto)
+        {
+            return IsNotUpdateForOwnDocument(firstUpdateDto) && string.Compare(firstUpdateDto.MemberName, secondUpdateDto.MemberName) > 0;
         }
 
         private void ApplyUpdate(Document document, UpdateDto dto)
@@ -357,18 +358,13 @@ namespace SharedTextEditor
             if (pendingUpdate != null)
             {
                 //will the pending update be applied after the given update?
-                if (pendingUpdate.MemberId > updateDto.MemberId)
+                if (MemberOfFirstUpdateIsNotOwnerAndHigherMember(pendingUpdate,updateDto))
                 {
                     everythingOk = MergePendingUpdateAfterGivenUpdate(updateDto, pendingUpdate);
                 }
-                else if (pendingUpdate.MemberId < updateDto.MemberId)
+                else if (MemberOfFirstUpdateIsOwnerOrLowerMember(pendingUpdate, updateDto))
                 {
                     everythingOk = MergePendingUpdateBeforeGivenUpdate(document, updateDto, pendingUpdate, resultAppliedGivenUpdate);
-                }
-                else
-                {
-                    //TODO should we care? we should not get an update from our own
-                    everythingOk = false;
                 }
             }
             return everythingOk;

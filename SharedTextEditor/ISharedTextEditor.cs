@@ -22,7 +22,7 @@ namespace SharedTextEditor
         void SynchronizeMemberList(string member);
 
         [OperationContract(IsOneWay = true)]
-        void FindDocument(string documentId);
+        void FindDocument(string documentId, string memberName);
 
         [OperationContract(IsOneWay = true)]
         void DocumentDiscoveryResponse(DocumentDto document);
@@ -45,13 +45,7 @@ namespace SharedTextEditor
     public interface ISharedTextEditorC2S
     {
         [OperationContract(IsOneWay = true)]
-        void MemberHasDocument(string documentId, string memberName);
-
-        [OperationContract(IsOneWay = true)]
-        void DocumentRequest(string documentId);
-
-        [OperationContract(IsOneWay = true)]
-        void OpenDocument(DocumentDto document);
+        void FindDocument(string documentId, string memberName);
 
         [OperationContract(IsOneWay = true)]
         void UpdateRequest(UpdateDto dto);
@@ -59,7 +53,6 @@ namespace SharedTextEditor
         [OperationContract(IsOneWay = true)]
         void AckRequest(AcknowledgeDto dto);
 
-        void FindDocument(string documentId);
     }
 
     [DataContract(Namespace = "http://com.sharedtexteditor")]
@@ -72,8 +65,6 @@ namespace SharedTextEditor
         public string Content { get; set; }
         [DataMember]
         public string Owner { get; set; }
-        [DataMember]
-        public int MyMemberId { get; set; }
     }
 
     [DataContract(Namespace = "http://com.sharedtexteditor")]
@@ -95,8 +86,7 @@ namespace SharedTextEditor
     public class UpdateDto
     {
         [DataMember]
-        public int MemberId { get; set; }
-
+        public String MemberName { get; set; }
 
         [DataMember]
         public string DocumentId { get; set; }

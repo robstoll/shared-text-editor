@@ -32,8 +32,6 @@ namespace SharedTextEditor
 
         public string Owner { get; set; }
 
-        public int MyMemberId { get; set; }
-
         public UpdateDto PendingUpdate { get; set; }
 
         public byte[] CurrentHash { get; set; }

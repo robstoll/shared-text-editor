@@ -23,9 +23,8 @@ namespace SharedTextEditor
             Application.SetCompatibleTextRenderingDefault(false);
 
             var editor = new SharedTextEditor(memberName);
-            //var patchingLogic = new SharedTextEditorPatchingLogic(memberName, editor);
-        
-            new SharedTextEditorP2PLogic(memberName, editor, null);
+            var patchingLogic = new SharedTextEditorPatchingLogic(memberName, editor);
+            new SharedTextEditorP2PLogic(memberName, editor, patchingLogic);
             
             Application.Run(editor);
         }
