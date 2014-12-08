@@ -214,7 +214,16 @@ namespace SharedTextEditor
                     }
                 });
             }
-            _documents.Add(dto.DocumentId, document);
+
+            if (_documents.ContainsKey(dto.DocumentId))
+            {
+                _documents[dto.DocumentId] = document;
+            }
+            else
+            {
+                _documents.Add(dto.DocumentId, document);
+            }
+            
         }
 
         private byte[] GetHash(string content)
