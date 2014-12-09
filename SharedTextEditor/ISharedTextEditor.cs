@@ -6,7 +6,7 @@ using DiffMatchPatch;
 
 namespace SharedTextEditor
 {
-    [ServiceContract(Namespace = "http://com.sharedtexteditor", CallbackContract = typeof(ISharedTextEditorP2P))]
+    [ServiceContract(CallbackContract = typeof(ISharedTextEditorP2P))]
     public interface ISharedTextEditorP2P
     {
         [OperationContract(IsOneWay = true)]
@@ -30,7 +30,7 @@ namespace SharedTextEditor
     {
     }
 
-     [ServiceContract(Namespace = "http://com.sharedtexteditor")]
+    [ServiceContract(SessionMode = SessionMode.Allowed)]
     public interface ISharedTextEditorC2S
     {
         [OperationContract(IsOneWay = true)]
@@ -56,8 +56,12 @@ namespace SharedTextEditor
 
         [DataMember]
         public string Content { get; set; }
+
         [DataMember]
         public string Owner { get; set; }
+
+        [DataMember]
+        public string OwnerHost { get; set; }
     }
 
     [DataContract(Namespace = "http://com.sharedtexteditor")]

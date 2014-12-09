@@ -38,12 +38,14 @@ namespace SharedTextEditor
 
         public string Content { get;set; }
 
+        public string OwnerHost { get; set; }
+
         public UpdateDto OutOfSyncUpdate { get; set; }
 
         private readonly Dictionary<byte[], Revision> _revisionsByHash = new Dictionary<byte[], Revision>(new ByteArrayComparer());
 
         private readonly List<Revision> _revisionsByIndex = new List<Revision>();
-        private readonly HashSet<string> _editingHosts = new HashSet<string>(); 
+        private readonly Dictionary<string, string> _editingHosts = new Dictionary<string, string>(); 
 
         public Revision GetRevision(byte[] hash)
         {
@@ -65,17 +67,20 @@ namespace SharedTextEditor
             _revisionsByHash.Add(revision.UpdateDto.NewHash, revision);
         }
 
-        public bool AddEditor(string host)
+        public void AddEditor(string name, string host)
         {
-            return _editingHosts.Add(host);
+             _editingHosts[name] = host;
         }
 
-        public bool RemoveEditor(string host)
+        public bool RemoveEditor(string name)
         {
-            return _editingHosts.Remove(host);
+            return _editingHosts.Remove(name);
         }
 
-
+        public Dictionary<string, string> Editors()
+        {
+            return _editingHosts;
+        }
     }
 
     public class Revision

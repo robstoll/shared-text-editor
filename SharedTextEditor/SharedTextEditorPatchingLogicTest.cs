@@ -31,6 +31,7 @@ namespace SharedTextEditor
             const string initialContent = "test";
             const string contentA1 = "tests";
             const string owner = "max";
+            const string host = "net.tcp://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             var diffMatchPath = new diff_match_patch();
@@ -39,7 +40,7 @@ namespace SharedTextEditor
 
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner, host, editor);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
@@ -75,6 +76,7 @@ namespace SharedTextEditor
             const string contentB1 = "testi";
             const string resultingContent = "testsi";
             const string owner = "max";
+            const string host = "net.tcp://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             var diffMatchPath = new diff_match_patch();
@@ -84,7 +86,7 @@ namespace SharedTextEditor
 
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner, host, editor);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
@@ -129,6 +131,7 @@ namespace SharedTextEditor
             const string contentB1 = "testi";
             const string resultingContent = "testsi";
             const string owner = "max";
+            const string host = "net.tcp://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             var diffMatchPath = new diff_match_patch();
@@ -138,7 +141,7 @@ namespace SharedTextEditor
             
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner,host, editor);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
@@ -185,6 +188,7 @@ namespace SharedTextEditor
             const string contentA1B1 = "testsi";
             const string resultingContent = "teststi";
             const string owner = "max";
+            const string host = "net.tcp://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] initialHash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             byte[] hashA1 = sha1.ComputeHash(Encoding.UTF8.GetBytes(contentA1));
@@ -196,7 +200,7 @@ namespace SharedTextEditor
 
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner, host, editor);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
@@ -252,6 +256,7 @@ namespace SharedTextEditor
             const string contentA1A2 = "testst";
             const string resultingContent = "testsit";
             const string owner = "max";
+            const string host = "net.tcp://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] initialHash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             byte[] hashA1 = sha1.ComputeHash(Encoding.UTF8.GetBytes(contentA1));
@@ -262,7 +267,7 @@ namespace SharedTextEditor
             editor.Stub(x => x.GetText(documentId)).Return(contentA1A2).Repeat.Once();
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner, host, editor);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
@@ -321,6 +326,7 @@ namespace SharedTextEditor
             const string contentA1B1A2 = "teststi";
             const string resultingContent = "teststi ";
             const string owner = "max";
+            const string host = "net.tcp://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] initialHash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             byte[] hashA1 = sha1.ComputeHash(Encoding.UTF8.GetBytes(contentA1));
@@ -333,7 +339,7 @@ namespace SharedTextEditor
 
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner,host, editor);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
