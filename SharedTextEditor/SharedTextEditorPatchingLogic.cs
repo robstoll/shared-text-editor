@@ -48,7 +48,8 @@ namespace SharedTextEditor
                 DocumentId = request.DocumentId,
                 PreviousHash = document.CurrentHash,
                 Patch = _diffMatchPatch.patch_make(document.Content, request.NewContent),
-                MemberName = _memberName
+                MemberName = _memberName,
+                MemberHost = _serverHost
             };
 
             //Am I the owner?
@@ -151,6 +152,7 @@ namespace SharedTextEditor
                     UpdateDto = new UpdateDto
                     {
                         MemberName = _memberName,
+                        MemberHost = _serverHost,
                         PreviousHash = new byte[] { },
                         NewHash = document.CurrentHash,
                         Patch = new List<Patch>(),
@@ -268,20 +270,18 @@ namespace SharedTextEditor
                 var result = _diffMatchPatch.patch_apply(updateDto.Patch, currentText);
                 if (result.Item2.All(x => x))
                 {
-                    
-
                     document.AddRevision(new Revision
                     {
                         Id = currentRevision.Id + 1,
                         Content = document.Content,
                         UpdateDto = updateDto
                     });
-
-                    _editor.UpdateText(updateDto.DocumentId, result.Item1);
-
+       
                     //Is not own document
                     if (IsNotUpdateForOwnDocument(updateDto))
                     {
+                        _editor.UpdateText(updateDto.DocumentId, result.Item1);  
+
                         var acknowledgeDto = new AcknowledgeDto
                         {
                             //TODO verify whether it should be currentHash or updateDto.PreviousHash
@@ -301,6 +301,7 @@ namespace SharedTextEditor
                     {
                         DocumentId = document.Id,
                         MemberName = updateDto.MemberName,
+                        MemberHost = _serverHost,
                         NewHash = document.CurrentHash,
                         PreviousHash = currentHash,
                         Patch = updateDto.Patch,
@@ -319,7 +320,11 @@ namespace SharedTextEditor
             }
             else if (IsNotUpdateForOwnDocument(updateDto))
             {
-                //TODO error handling -> inform client, shall reload the document
+                 using (var cf = GetChannelFactory(updateDto.MemberHost))
+                 {
+                    var channel = cf.CreateChannel();
+                    channel.UpdateRequest(updateDto);
+                 }
             }
         }
 

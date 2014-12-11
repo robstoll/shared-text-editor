@@ -42,14 +42,14 @@ namespace SharedTextEditor
 
         private static void StartServerHost(int port,  string memberName, SharedTextEditor editor, SharedTextEditorPatchingLogic patchingLogic)
         {
-            var patchingService = new SharedTextEditorPatchingLogic(memberName, ServiceHostEndpoint(port), editor);
+           // var patchingService = new SharedTextEditorPatchingLogic(memberName, ServiceHostEndpoint(port), editor);
 
             var serviceHost = ServiceHostAddress(port);
             var serviceUrl = new Uri(serviceHost);
 
             var serviceAddress = ServiceHostEndpoint(port);
 
-            var host = new ServiceHost(patchingService, serviceUrl);
+            var host = new ServiceHost(patchingLogic, serviceUrl);
             
                // host.Description.Behaviors.Add(new ServiceMetadataBehavior { HttpGetEnabled = true });
                 host.Description.Behaviors.Find<ServiceDebugBehavior>().IncludeExceptionDetailInFaults = true;
