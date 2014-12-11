@@ -17,7 +17,7 @@ namespace SharedTextEditor
         [STAThread]
         static void Main(string[] args)
         {
-            var memberName = new Guid().ToString();
+            var memberName = Guid.NewGuid().ToString();
             if (args.Length == 1)
             {
                 memberName = args[0];

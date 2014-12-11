@@ -264,10 +264,11 @@ namespace SharedTextEditor
 
             if (creationSucessfull)
             {
-                var result = _diffMatchPatch.patch_apply(updateDto.Patch, _editor.GetText(updateDto.DocumentId));
+                var currentText = _editor.GetText(updateDto.DocumentId);
+                var result = _diffMatchPatch.patch_apply(updateDto.Patch, currentText);
                 if (result.Item2.All(x => x))
                 {
-                    _editor.UpdateText(updateDto.DocumentId, result.Item1);
+                    
 
                     document.AddRevision(new Revision
                     {
@@ -275,6 +276,8 @@ namespace SharedTextEditor
                         Content = document.Content,
                         UpdateDto = updateDto
                     });
+
+                    _editor.UpdateText(updateDto.DocumentId, result.Item1);
 
                     //Is not own document
                     if (IsNotUpdateForOwnDocument(updateDto))

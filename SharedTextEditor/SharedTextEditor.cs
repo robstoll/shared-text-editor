@@ -45,7 +45,10 @@ namespace SharedTextEditor
             {
                 if (_textBoxes.ContainsKey(documentId))
                 {
-                    _textBoxes[documentId].Text = content;
+                    if (_textBoxes[documentId].Text != content)
+                    {
+                        _textBoxes[documentId].Text = content;
+                    }   
                 }
                 else
                 {
