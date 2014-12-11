@@ -59,7 +59,7 @@ namespace SharedTextEditor
             }
             else
             {
-                using (var cf = GetChannelFactory(_serverHost))
+                using (var cf = GetChannelFactory(document.OwnerHost))
                 {
                     ISharedTextEditorC2S client = cf.CreateChannel();
 
@@ -116,6 +116,7 @@ namespace SharedTextEditor
                         Content = document.Content,
                         DocumentId = documentId,
                         Owner = _memberName,
+                        OwnerHost = _serverHost
                     });
                 }
             }
