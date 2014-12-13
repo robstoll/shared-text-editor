@@ -12,6 +12,7 @@ namespace SharedTextEditor
 
         private readonly string _memberName;
         private bool _connected;
+        private bool _isUpdatingEditor = false;
         
 
         public SharedTextEditor(string memberName)
@@ -43,12 +44,10 @@ namespace SharedTextEditor
 
             if (_tabPages.ContainsKey(documentId))
             {
+                _isUpdatingEditor = true;
                 if (_textBoxes.ContainsKey(documentId))
                 {
-                    if (_textBoxes[documentId].Text != content)
-                    {
-                        _textBoxes[documentId].Text = content;
-                    }   
+                    _textBoxes[documentId].Text = content;     
                 }
                 else
                 {
@@ -57,6 +56,7 @@ namespace SharedTextEditor
                     OpenTab(documentId);
                     _textBoxes[documentId].Text = content;
                 }
+                _isUpdatingEditor = false;
             }
         }
 
@@ -90,7 +90,7 @@ namespace SharedTextEditor
 
         private void SendMessage(string documentId, string text)
         {
-            if (UpdateDocument != null)
+            if (!_isUpdatingEditor && UpdateDocument != null)
             {
                 UpdateDocument(this, new UpdateDocumentRequest
                 {
@@ -131,7 +131,8 @@ namespace SharedTextEditor
                     "Document Id missing",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
-            } else if( _textBoxes.ContainsKey(documentId))
+            }
+            else if (_tabPages.ContainsKey(documentId))
             {
                 var result = MessageBox.Show(
                     message,
@@ -173,13 +174,6 @@ namespace SharedTextEditor
                 Multiline = true,
                 Dock = DockStyle.Fill
             };
-            textBox.KeyDown += (sender, e) =>
-            {
-                if (e.Control && e.KeyCode == Keys.W)
-                {
-                    CloseDocument(documentId);
-                }
-            };
             textBox.TextChanged += (object sender, EventArgs e) => SendMessage(documentId, textBox.Text);
            
             tabPage.Controls.Add(textBox);
@@ -209,12 +203,13 @@ namespace SharedTextEditor
                 tabControl.Controls.Add(tabPage);
                 tabControl.SelectedTab = tabPage;
 
-                tabPage.Controls.Add(new Label
+                var label = new Label
                 {
                     Text = "\n Searching document with id " + documentId + "."
-                          +"\n Please be patient ...",
-                    Dock = DockStyle.Fill
-                });
+                           +"\n Please be patient ...",
+                    Dock = DockStyle.Fill,
+                };
+                tabPage.Controls.Add(label);
 
                 _tabPages.Add(documentId, tabPage);
                 if (FindDocumentRequest != null)
@@ -248,6 +243,15 @@ namespace SharedTextEditor
         public event EventHandler<string> CreateDocument;
         public event EventHandler<string> RemoveDocument;
         public event EventHandler<UpdateDocumentRequest> UpdateDocument;
+
+        private void SharedTextEditor_KeyDown(object sender, KeyEventArgs e)
+        {
+            var index = tabControl.SelectedIndex;
+            if (index!= -1 && e.Control && e.KeyCode == Keys.W )
+            {
+                CloseDocument(tabControl.GetControl(index).Name);
+            }
+        }
 
     }
 

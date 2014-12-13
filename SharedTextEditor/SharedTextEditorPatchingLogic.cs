@@ -23,7 +23,6 @@ namespace SharedTextEditor
         private readonly string _serverHost;
         private readonly SharedTextEditor _editor;
 
-
         public SharedTextEditorPatchingLogic()
         {
         }
@@ -385,7 +384,7 @@ namespace SharedTextEditor
             }
 
             //check whether we have an out of sync update which is based on the given update (so we could apply it as well)
-            if (document.OutOfSyncUpdate.PreviousHash.SequenceEqual(document.CurrentHash))
+            if (document.OutOfSyncUpdate!= null && document.OutOfSyncUpdate.PreviousHash.SequenceEqual(document.CurrentHash))
             {
                 var outOfSynUpdate = document.OutOfSyncUpdate;
                 document.OutOfSyncUpdate = null;
@@ -397,7 +396,7 @@ namespace SharedTextEditor
         {
             document.Content = resultAppliedGivenUpdate.Item1;
             document.CurrentHash = GetHash(document.Content);
-            if (document.CurrentHash != updateDto.NewHash)
+            if (!document.CurrentHash.SequenceEqual(updateDto.NewHash))
             {
                 //oho... should be the same, something went terribly wrong
                 ReOpenDocument(document.Id);
@@ -412,15 +411,22 @@ namespace SharedTextEditor
             if (pendingUpdate != null)
             {
                 //will the pending update be applied after the given update?
-                if (MemberOfFirstUpdateIsNotOwnerAndHigherMember(pendingUpdate,updateDto))
+                if (MemberOfFirstUpdateIsNotOwnerAndHigherMember(pendingUpdate, updateDto))
                 {
                     everythingOk = MergePendingUpdateAfterGivenUpdate(updateDto, pendingUpdate);
                 }
                 else if (MemberOfFirstUpdateIsOwnerOrLowerMember(pendingUpdate, updateDto))
                 {
-                    everythingOk = MergePendingUpdateBeforeGivenUpdate(document, updateDto, pendingUpdate, resultAppliedGivenUpdate);
+                    everythingOk = MergePendingUpdateBeforeGivenUpdate(document, updateDto, pendingUpdate,
+                        resultAppliedGivenUpdate);
                 }
             }
+            else
+            {
+                //no mergin needed, only update the editor
+                _editor.UpdateText(updateDto.DocumentId, resultAppliedGivenUpdate.Item1);
+            }
+
             return everythingOk;
         }
 
@@ -502,7 +508,7 @@ namespace SharedTextEditor
 
         private bool WeAreOwnerAndCorrespondsToPendingUpdate(AcknowledgeDto dto, Document document)
         {
-            return document.Owner != _memberName && document.PendingUpdate.PreviousHash == dto.PreviousHash;
+            return document.Owner != _memberName && document.PendingUpdate.PreviousHash.SequenceEqual(dto.PreviousHash);
         }
 
         private ChannelFactory<ISharedTextEditorC2S> GetChannelFactory(string host){
