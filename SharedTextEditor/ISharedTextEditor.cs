@@ -85,6 +85,7 @@ namespace SharedTextEditor
         [DataMember]
         public String MemberName { get; set; }
 
+        [DataMember]
         public String MemberHost { get; set; }
 
         [DataMember]

@@ -172,10 +172,17 @@ namespace SharedTextEditor
             var textBox = new TextBox
             {
                 Multiline = true,
-                Dock = DockStyle.Fill
+                Dock = DockStyle.Fill,
+                ShortcutsEnabled = true
             };
             textBox.TextChanged += (object sender, EventArgs e) => SendMessage(documentId, textBox.Text);
-           
+            textBox.KeyDown += (sender, e) =>
+            {
+                if (e.Control && e.KeyCode == Keys.A)
+                {
+                    textBox.SelectAll();
+                }
+            };
             tabPage.Controls.Add(textBox);
 
             _textBoxes.Add(documentId, textBox);

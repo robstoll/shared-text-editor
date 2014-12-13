@@ -70,6 +70,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientServerCommunication.cs" />
     <Compile Include="SharedTextEditorP2PLogic.cs" />
     <Compile Include="SharedTextEditorPatchingLogic.cs" />
     <Compile Include="SharedTextEditorPatchingLogicTest.cs" />

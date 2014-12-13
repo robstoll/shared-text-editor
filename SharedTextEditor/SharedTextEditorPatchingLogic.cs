@@ -22,16 +22,14 @@ namespace SharedTextEditor
         private readonly string _memberName;
         private readonly string _serverHost;
         private readonly SharedTextEditor _editor;
+        private readonly IClientServerCommunication _communication;    
 
-        public SharedTextEditorPatchingLogic()
-        {
-        }
-
-        public SharedTextEditorPatchingLogic(string memberName, string serverHost, SharedTextEditor editor)
+        public SharedTextEditorPatchingLogic(string memberName, string serverHost, SharedTextEditor editor, IClientServerCommunication clientServerCommunication)
         {
             _memberName = memberName;
             _serverHost = serverHost;
             _editor = editor;
+            _communication = clientServerCommunication;
             _editor.FindDocumentRequest += Editor_FindDocumentRequest;
             _editor.CreateDocument += Editor_CreateDocument;
             _editor.RemoveDocument += Editor_RemoveDocument;
@@ -42,29 +40,31 @@ namespace SharedTextEditor
         {
             var document = _documents[request.DocumentId];
 
-            var updateDto = new UpdateDto
-            {
-                DocumentId = request.DocumentId,
-                PreviousHash = document.CurrentHash,
-                Patch = _diffMatchPatch.patch_make(document.Content, request.NewContent),
-                MemberName = _memberName,
-                MemberHost = _serverHost
-            };
+            var updateDto = CreateUpdateDto(document, request.NewContent);
 
             //Am I the owner?
             if (document.Owner == _memberName)
             {
                 CreatePatchForUpdate(document, updateDto);
             }
-            else
-            {
-                using (var cf = GetChannelFactory(document.OwnerHost))
-                {
-                    ISharedTextEditorC2S client = cf.CreateChannel();
-
-                    client.UpdateRequest(updateDto);
-                }
+            else if(document.PendingUpdate == null)
+            {                
+                document.PendingUpdate = updateDto;
+                _communication.UpdateRequest(document.OwnerHost, updateDto);
             }
+        }
+
+        private UpdateDto CreateUpdateDto(Document document, string content)
+        {
+            var updateDto = new UpdateDto
+            {
+                DocumentId = document.Id,
+                PreviousHash = document.CurrentHash,
+                Patch = _diffMatchPatch.patch_make(document.Content, content),
+                MemberName = _memberName,
+                MemberHost = _serverHost
+            };
+            return updateDto;
         }
 
         private void Editor_FindDocumentRequest(object sender, string documentId)
@@ -100,24 +100,16 @@ namespace SharedTextEditor
             //Is it our document? then we inform client about it
             if (_documents.ContainsKey(documentId) && _documents[documentId].Owner == _memberName)
             {
-          
-                
-                using(var cf = GetChannelFactory(host))
+                Document document = _documents[documentId];
+                document.AddEditor(memberName, host);
+                _communication.OpenDocument(host, new DocumentDto
                 {
-                    ISharedTextEditorC2S client = cf.CreateChannel();
+                    Content = document.Content,
+                    DocumentId = documentId,
+                    Owner = _memberName,
+                    OwnerHost = _serverHost
+                });
 
-                    Document document = _documents[documentId];
-
-                    document.AddEditor(memberName, host);
-
-                    client.OpenDocument(new DocumentDto
-                    {
-                        Content = document.Content,
-                        DocumentId = documentId,
-                        Owner = _memberName,
-                        OwnerHost = _serverHost
-                    });
-                }
             }
         }
 
@@ -277,24 +269,18 @@ namespace SharedTextEditor
                         UpdateDto = updateDto
                     });
        
-                    //Is not own document
-                    if (IsNotUpdateForOwnDocument(updateDto))
+                    if (IsNotOwnUpdate(updateDto))
                     {
                         _editor.UpdateText(updateDto.DocumentId, result.Item1);  
 
                         var acknowledgeDto = new AcknowledgeDto
                         {
-                            //TODO verify whether it should be currentHash or updateDto.PreviousHash
                             PreviousHash = currentHash,
                             NewHash = document.CurrentHash,
                             DocumentId = document.Id
                         };
 
-                        using (var cf = GetChannelFactory(document.OwnerHost))
-                        {
-                            var channel = cf.CreateChannel();
-                            channel.AckRequest(acknowledgeDto);
-                        }
+                        _communication.AckRequest(updateDto.MemberHost, acknowledgeDto);
                     }
 
                     var newUpdateDto = new UpdateDto
@@ -310,37 +296,32 @@ namespace SharedTextEditor
 
                     foreach (var editorHost in document.Editors().Values)
                     {
-                        using (var cf = GetChannelFactory(editorHost))
+                        if (updateDto.MemberHost != editorHost)
                         {
-                            var channel = cf.CreateChannel();
-                            channel.UpdateRequest(newUpdateDto);
+                            _communication.UpdateRequest(editorHost, newUpdateDto);
                         }
                     }
                 }
             }
-            else if (IsNotUpdateForOwnDocument(updateDto))
+            else if (IsNotOwnUpdate(updateDto))
             {
-                 using (var cf = GetChannelFactory(updateDto.MemberHost))
-                 {
-                    var channel = cf.CreateChannel();
-                    channel.UpdateRequest(updateDto);
-                 }
+                 //TODO error handling
             }
         }
 
-        private bool IsNotUpdateForOwnDocument(UpdateDto updateDto)
+        private bool IsNotOwnUpdate(UpdateDto updateDto)
         {
             return updateDto.MemberName != _memberName;
         }
 
         private bool MemberOfFirstUpdateIsOwnerOrLowerMember(UpdateDto firstUpdateDto, UpdateDto secondUpdateDto)
         {
-            return !IsNotUpdateForOwnDocument(firstUpdateDto) || string.Compare(firstUpdateDto.MemberName, secondUpdateDto.MemberName) < 0;
+            return !IsNotOwnUpdate(firstUpdateDto) || string.Compare(firstUpdateDto.MemberName, secondUpdateDto.MemberName) < 0;
         }
 
         private bool MemberOfFirstUpdateIsNotOwnerAndHigherMember(UpdateDto firstUpdateDto, UpdateDto secondUpdateDto)
         {
-            return IsNotUpdateForOwnDocument(firstUpdateDto) && string.Compare(firstUpdateDto.MemberName, secondUpdateDto.MemberName) > 0;
+            return IsNotOwnUpdate(firstUpdateDto) && string.Compare(firstUpdateDto.MemberName, secondUpdateDto.MemberName) > 0;
         }
 
         private void ApplyUpdate(Document document, UpdateDto dto)
@@ -495,31 +476,34 @@ namespace SharedTextEditor
             if (_documents.ContainsKey(dto.DocumentId))
             {
                 var document = _documents[dto.DocumentId];
-                if (WeAreOwnerAndCorrespondsToPendingUpdate(dto, document))
+                if (WeAreNotOwnerAndCorrespondsToPendingUpdate(dto, document))
                 {
                     var result = _diffMatchPatch.patch_apply(document.PendingUpdate.Patch, document.Content);
                     if (CheckResultIsValidOtherwiseReOpen(result, dto.DocumentId))
                     {
+                        document.PendingUpdate.NewHash = dto.NewHash;
                         UpdateDocument(document, document.PendingUpdate, result);
+                    }
+
+                    if (document.Content != _editor.GetText(dto.DocumentId))
+                    {
+                        //send next update
+                        var updateDto = CreateUpdateDto(document, _editor.GetText(dto.DocumentId));
+                        document.PendingUpdate = updateDto;
+                        _communication.UpdateRequest(document.OwnerHost, updateDto);
+                    }
+                    else
+                    {
+                        document.PendingUpdate = null;
                     }
                 }
             }
         }
 
-        private bool WeAreOwnerAndCorrespondsToPendingUpdate(AcknowledgeDto dto, Document document)
+        private bool WeAreNotOwnerAndCorrespondsToPendingUpdate(AcknowledgeDto dto, Document document)
         {
             return document.Owner != _memberName && document.PendingUpdate.PreviousHash.SequenceEqual(dto.PreviousHash);
         }
-
-        private ChannelFactory<ISharedTextEditorC2S> GetChannelFactory(string host){
-            
-            var binding = new NetTcpBinding();
-            var endpoint = new EndpointAddress(host);
-
-            return new ChannelFactory<ISharedTextEditorC2S>(binding, endpoint);
-            
-        }
-
 
         public event EventHandler<string> FindDocumentRequest;
     }
