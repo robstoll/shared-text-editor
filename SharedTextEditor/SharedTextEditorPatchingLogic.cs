@@ -343,7 +343,7 @@ namespace SharedTextEditor
 
         private void ApplyUpdate(Document document, UpdateDto dto)
         {
-            if (false && document.CurrentRevisionId == dto.PreviousRevisionId && document.CurrentHash.SequenceEqual(dto.PreviousHash))
+            if (document.CurrentRevisionId == dto.PreviousRevisionId && document.CurrentHash.SequenceEqual(dto.PreviousHash))
             {
                 MergeUpdate(document, dto);
             }
