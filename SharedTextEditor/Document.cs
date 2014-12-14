@@ -34,6 +34,8 @@ namespace SharedTextEditor
 
         public UpdateDto PendingUpdate { get; set; }
 
+        public int CurrentRevisionId { get; set; }
+
         public byte[] CurrentHash { get; set; }
 
         public string Content { get;set; }
@@ -42,29 +44,26 @@ namespace SharedTextEditor
 
         public UpdateDto OutOfSyncUpdate { get; set; }
 
-        private readonly Dictionary<byte[], Revision> _revisionsByHash = new Dictionary<byte[], Revision>(new ByteArrayComparer());
+        private readonly Dictionary<int, Revision> _revisions = new Dictionary<int, Revision>();
+        private readonly Dictionary<string, string> _editingHosts = new Dictionary<string, string>();
 
-        private readonly List<Revision> _revisionsByIndex = new List<Revision>();
-        private readonly Dictionary<string, string> _editingHosts = new Dictionary<string, string>(); 
-
-        public Revision GetRevision(byte[] hash)
+        public Revision GetCurrentRevision()
         {
-            return _revisionsByHash.ContainsKey(hash) ? _revisionsByHash[hash] : null;
+            return GetRevision(CurrentRevisionId);
         }
 
-        public Revision GetRevision(int index)
+        public Revision GetRevision(int revisionId)
         {
-            if (_revisionsByIndex.Count > index)
+            if (_revisions.ContainsKey(revisionId))
             {
-                return _revisionsByIndex[index];
+                return _revisions[revisionId];
             }
             return null;
         }
 
         public void AddRevision(Revision revision)
         {
-            _revisionsByIndex.Add(revision);
-            _revisionsByHash.Add(revision.UpdateDto.NewHash, revision);
+            _revisions.Add(revision.Id, revision);
         }
 
         public void AddEditor(string name, string host)

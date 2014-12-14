@@ -48,13 +48,15 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 Content = initialContent,
                 Owner = owner,
-                OwnerHost = host
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
             {
                 DocumentId = documentId,
                 MemberName = memberId,
+                PreviousRevisionId = 1,
                 PreviousHash = hash,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
@@ -95,13 +97,15 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 Content = initialContent,
                 Owner = owner,
-                OwnerHost = host
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
             {
                 DocumentId = documentId,
                 MemberName = memberIdA,
+                PreviousRevisionId = 1,
                 PreviousHash = hash,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
@@ -110,6 +114,7 @@ namespace SharedTextEditor
             {
                 DocumentId = documentId,
                 MemberName = memberIdB,
+                PreviousRevisionId = 1,
                 PreviousHash = hash,
                 Patch = diffMatchPath.patch_make(initialContent, contentB1)
             });
@@ -151,13 +156,15 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 Content = initialContent,
                 Owner = owner,
-                OwnerHost = host
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
             {
                 DocumentId = documentId,
                 MemberName = memberIdB,
+                PreviousRevisionId = 1,
                 PreviousHash = hash,
                 Patch = diffMatchPath.patch_make(initialContent, contentB1)
             });
@@ -166,6 +173,7 @@ namespace SharedTextEditor
             {
                 DocumentId = documentId,
                 MemberName = memberIdA,
+                PreviousRevisionId = 1,
                 PreviousHash = hash,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
@@ -179,7 +187,7 @@ namespace SharedTextEditor
         }
 
         [Test]
-        public void UpdateRequestServer_ExistingIsXA1B1UpdateRequestA1A2_PatchXA1A2B1()
+        public void UpdateRequestServer_ExistingIsXA1B1UpdateRequestA2_PatchXA1A2B1()
         {
             const string memberIdA = "1";
             const string memberIdB = "2";
@@ -211,7 +219,8 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 Content = initialContent,
                 Owner = owner,
-                OwnerHost = host
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
@@ -219,6 +228,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
 
@@ -227,6 +237,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdB,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentB1)
             });
 
@@ -235,6 +246,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = hashA1,
+                PreviousRevisionId = 2,
                 Patch = diffMatchPath.patch_make(contentA1, contentA2)
             });
 
@@ -280,7 +292,8 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 Content = initialContent,
                 Owner = owner,
-                OwnerHost = host
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
@@ -288,6 +301,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
 
@@ -296,6 +310,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = hashA1,
+                PreviousRevisionId = 2,
                 Patch = diffMatchPath.patch_make(contentA1, contentA2)
             });
 
@@ -304,6 +319,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdB,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentB1)
             });
 
@@ -353,7 +369,8 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 Content = initialContent,
                 Owner = owner,
-                OwnerHost = host
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
@@ -361,6 +378,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
 
@@ -369,6 +387,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdB,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentB1)
             });
 
@@ -377,6 +396,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = hashA1,
+                PreviousRevisionId = 2,
                 Patch = diffMatchPath.patch_make(contentA1, contentA2)
             });
 
@@ -385,6 +405,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdC,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentC1)
             });
 

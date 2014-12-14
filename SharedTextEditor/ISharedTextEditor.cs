@@ -44,8 +44,6 @@ namespace SharedTextEditor
 
          [OperationContract(IsOneWay = true)]
          void OpenDocument(DocumentDto dto);
-
-         event EventHandler<string> FindDocumentRequest;
     }
 
     [DataContract(Namespace = "http://com.sharedtexteditor")]
@@ -53,6 +51,9 @@ namespace SharedTextEditor
     {
         [DataMember]
         public string DocumentId { get; set; }
+
+        [DataMember]
+        public int RevisionId { get; set; }
 
         [DataMember]
         public string Content { get; set; }
@@ -71,10 +72,16 @@ namespace SharedTextEditor
         public string DocumentId { get; set; }
 
         [DataMember]
+        public int PreviousRevisionId { get; set; }
+
+        [DataMember]
         public byte[] PreviousHash { get; set; }
 
         [DataMember]
         public byte[] NewHash { get; set; }
+
+        [DataMember]
+        public int NewRevisionId { get; set; }
     }
 
 
@@ -92,10 +99,16 @@ namespace SharedTextEditor
         public string DocumentId { get; set; }
 
         [DataMember]
+        public int PreviousRevisionId { get; set; }
+
+        [DataMember]
         public byte[] PreviousHash { get; set; }
 
         [DataMember]
         public byte[] NewHash { get; set; }
+
+        [DataMember]
+        public int NewRevisionId { get; set; }
 
         [DataMember]
         public List<Patch> Patch { get; set; }
