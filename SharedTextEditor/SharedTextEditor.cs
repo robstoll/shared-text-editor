@@ -29,11 +29,40 @@ namespace SharedTextEditor
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new IntDelegate(UpdateNumberOfEditors));
+                BeginInvoke(new IntDelegate(UpdateNumberOfEditors), new object[] { number });
                 return;
             }
 
             lblNumber.Text = number.ToString();
+        }
+
+        private delegate void UpdateConnectionStateDelegate(bool connected);
+      
+        public void UpdateConnectionState(bool connected)
+        {
+             if (InvokeRequired)
+            {
+                BeginInvoke(new UpdateConnectionStateDelegate(UpdateConnectionState), new object[] { connected });
+                return;
+            }
+
+            btnConnect.Enabled = true;
+            if (connected)
+            {
+                txtId.Enabled = true;
+                btnOpen.Enabled = true;
+                btnCreate.Enabled = true;
+                btnConnect.Text = "Disconnect";
+            }
+            else
+            {
+                MessageBox.Show(
+                    "Can't connect to Mesh! Please try again..",
+                    "P2p Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                btnConnect.Text = "Connect";
+            }
         }
 
         private delegate void UpdateTextDelegate(string documentId, string content);
@@ -41,7 +70,7 @@ namespace SharedTextEditor
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new UpdateTextDelegate(UpdateText));
+                BeginInvoke(new UpdateTextDelegate(UpdateText), new object[] { documentId, content });
                 return;
             }
 
@@ -70,19 +99,19 @@ namespace SharedTextEditor
                 _connected = true;
                 if (ConnectToP2P != null)
                 {
-                    ConnectToP2P(this, EventArgs.Empty);
+                    var that = this;
+                    Task.Run(()=>ConnectToP2P(that, EventArgs.Empty));
                 }
-                txtId.Enabled = true;
-                btnOpen.Enabled = true;
-                btnCreate.Enabled = true;
-                btnConnect.Text = "Disconnect";
+          
+                btnConnect.Enabled = false;
+                btnConnect.Text = "Connecting";
             }
             else
             {
                 _connected = false;
                 if (DisconnectFromP2P != null)
                 {
-                    DisconnectFromP2P(this, EventArgs.Empty);
+                    Task.Run(()=>DisconnectFromP2P(this, EventArgs.Empty));
                 }
                 btnConnect.Text = "Connect";
                 btnCreate.Enabled = false;

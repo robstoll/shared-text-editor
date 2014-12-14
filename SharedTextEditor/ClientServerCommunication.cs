@@ -22,7 +22,15 @@ namespace SharedTextEditor
         {
             using (var cf = GetChannelFactory(host))
             {
-                cf.CreateChannel().UpdateRequest(updateDto);
+                try
+                {
+                    cf.CreateChannel().UpdateRequest(updateDto);
+                }
+                catch (Exception)
+                {
+                    
+                    // Ignore offline server for now - TODO decide how to handle 
+                }
             }
         }
 
