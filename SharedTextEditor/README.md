@@ -6,7 +6,7 @@
 
 ##Description
 
-The Shared Text Editor provides a simple collaborative text-editing tool, which allows multiple users to edit the same piece of text simultaneously.  Changes to the edited document are distributed to all associated editors instantly.
+The Shared Text Editor provides a simple collaborative text-editing tool, which allows multiple users to edit the same piece of text simultaneously. Changes to the edited document are distributed to all associated editors instantly.
 
 The editor is implemented using C# .Net and the Windows Communication Foundation (WCF) for Peer-to-Peer as well as Client/Server communication.
 
@@ -14,11 +14,11 @@ The editor is implemented using C# .Net and the Windows Communication Foundation
 
 ###Communication
 
-As previously mentioned the communication of the editor is implemented using WCF technologies. In order to fulfill the requirement for automatic document discovery between multiple editing clients we use NetPeerTcpBinding, which has been supported since .NET Framework 3.0. It provides everything we need in order to discover clients within the same LAN and broadcast requests for document discovery to all possible hosts. Once a client has started editing a document it communicates with the owner of the document via HTTP using WCF BasicHttpBinding, the owner of the document will then multicast the patch of changes to all other known editors.  Channeling the document update trough the owner should help to avoid patching conflicts and avoid unnecessary broadcast messages if possible.
+As previously mentioned the communication of the editor is implemented using WCF technologies. In order to fulfill the requirement for automatic document discovery between multiple editing clients we use NetPeerTcpBinding, which has been supported since .NET Framework 3.0. It provides everything we need in order to discover clients within the same LAN and broadcast requests for document discovery to all possible hosts. Once a client has started editing a document it communicates with the owner of the document via HTTP using WCF BasicHttpBinding. Clients are sending their patches to the owner and the owner in turn sends the applied patches via multicast to the other known editors as well as an acknowledgement to the client who send the corresponding update. Channeling the document update through the owner should help to avoid patching conflicts and avoid unnecessary broadcast messages if possible.
 
 
 ###Update Logic
-The editors uses the open source Diff, Match and patch libraries from Google Inc. which provide robust algorithms to perform the operations required for synchronizing plain text. Creating patches reduces the amount of data transferred and allows the changes to be applied without relying on static indexes within the text.
+The editors use the open source Diff, Match and patch libraries from Google Inc. which provide robust algorithms to perform the operations required for synchronizing plain text. Creating patches reduces the amount of data transferred and allows the changes to be applied without relying on static indexes within the text.
 
 ###User Interface
 
@@ -34,13 +34,16 @@ code.google.com/p/google-diff-match-patch
  
 
 ##Known issues
+-   open a document if there are multiple owner with the document. The owner which serves the document faster is chosen
+
 ##Time spent
 
-Planing: xxh
 
-Implementation: xxh
+Planing/Research: 8h
 
-Testing/Bugfixes: xxh
+Implementation: 36h
+
+Testing/Bugfixes: 10h
 
 
 ##User Guide
@@ -54,6 +57,8 @@ Testing/Bugfixes: xxh
 - Enter the name of the document you want to edit
 
 - If you want to join an existing document with the given name click 'Open'. If you want to create a new document click 'Create'
+
+- To close an open tab, type "CTRL+W"
 
 ##Screenshots
 
