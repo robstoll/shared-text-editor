@@ -51,7 +51,7 @@ namespace SharedTextEditor
             else if(document.PendingUpdate == null)
             {                
                 document.PendingUpdate = updateDto;
-                _communication.UpdateRequest(document.OwnerHost, updateDto);
+                SendUpdateToDocumentOwner(document, updateDto);
             }
         }
 
@@ -215,7 +215,7 @@ namespace SharedTextEditor
                     creationSucessfull = true;
                 }else
                 {
-                    //TODO error handling
+                   HandleErrorOnUpdate(updateDto);
                 }
             }
             else
@@ -254,7 +254,7 @@ namespace SharedTextEditor
                         }
                         else
                         {
-                            //TODO error handling
+                            HandleErrorOnUpdate(updateDto);
                         }
                     }
                     document.Content = content;
@@ -309,14 +309,20 @@ namespace SharedTextEditor
                 {
                     if (updateDto.MemberHost != editorHost)
                     {
-                        _communication.UpdateRequest(editorHost, newUpdateDto);
+                        try
+                        {
+                            _communication.UpdateRequest(editorHost, newUpdateDto);
+                        }
+                        catch (EndpointNotFoundException)
+                        {
+                            document.Editors().Remove(editorHost);
+                        }
                     }
                 }
-               
             }
             else if (IsNotOwnUpdate(updateDto))
             {
-                 //TODO error handling
+                HandleErrorOnUpdate(updateDto);
             }
         }
 
@@ -505,7 +511,8 @@ namespace SharedTextEditor
                         //send next update
                         var updateDto = CreateUpdateDto(document, currentText);
                         document.PendingUpdate = updateDto;
-                        _communication.UpdateRequest(document.OwnerHost, updateDto);
+
+                        SendUpdateToDocumentOwner(document, updateDto);  
                     }
                     else
                     {
@@ -518,6 +525,27 @@ namespace SharedTextEditor
         private bool WeAreNotOwnerAndCorrespondsToPendingUpdate(AcknowledgeDto dto, Document document)
         {
             return document.Owner != _memberName && document.PendingUpdate.PreviousHash.SequenceEqual(dto.PreviousHash);
+        }
+
+        private void SendUpdateToDocumentOwner(Document document, UpdateDto dto)
+        {
+            try
+            {
+                _communication.UpdateRequest(document.OwnerHost, dto);
+            }
+            catch (EndpointNotFoundException)
+            {
+                // Ignore offline server for now - TODO decide how to handle 
+
+            }
+        }
+
+        private void HandleErrorOnUpdate(UpdateDto dto)
+        {
+            if (IsNotOwnUpdate(dto))
+            {
+                _editor.ReloadDocument(dto.DocumentId);
+            }
         }
     }
 }
