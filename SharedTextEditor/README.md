@@ -1,6 +1,7 @@
 ﻿#Shared Text Editor
 
 **Matthias Leitner s1310454019**
+
 **Robert Stoll s1310454032**
 
 ##Description
@@ -17,11 +18,11 @@ As previously mentioned the communication of the editor is implemented using WCF
 
 
 ###Update Logic
-The editors uses the open source Diff, Match and patch libraries from Google Inc. which provide robust algorithms to perform the operations required for synchronizing plain text.
+The editors uses the open source Diff, Match and patch libraries from Google Inc. which provide robust algorithms to perform the operations required for synchronizing plain text. Creating patches reduces the amount of data transferred and allows the changes to be applied without relying on static indexes within the text.
 
 ###User Interface
 
-The user interface is realized using the Windows Forms APIs.
+The user interface is realized using the Windows Forms APIs. All the logic is decoupled from the UI and should therefore never block the user interaction.
 
 
 ##Dependencies
@@ -34,7 +35,25 @@ code.google.com/p/google-diff-match-patch
 
 ##Known issues
 ##Time spent
+
+Planing: xxh
+
+Implementation: xxh
+
+Testing/Bugfixes: xxh
+
+
 ##User Guide
+
+- Start the client 
+
+- Click 'Connect' in order to join the P2P Mesh
+
+- Wait until the connection to the mesh is established
+
+- Enter the name of the document you want to edit
+
+- If you want to join an existing document with the given name click 'Open'. If you want to create a new document click 'Create'
 
 ##Screenshots
 
