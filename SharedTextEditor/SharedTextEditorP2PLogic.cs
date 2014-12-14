@@ -48,7 +48,6 @@ namespace SharedTextEditor
             _editor.DisconnectFromP2P += Editor_DisconnectFromP2P;
             _editor.FindDocumentRequest += Editor_FindDocumentRequest;
             _clientService = clientService;
-            _clientService.FindDocumentRequest += Editor_FindDocumentRequest;
             _c2shost = c2sHost;
         }
 

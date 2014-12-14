@@ -29,7 +29,7 @@ namespace SharedTextEditor
 
             var editor = new SharedTextEditor(memberName);
 
-            var patchingClientLogic = new SharedTextEditorPatchingLogic(memberName, ServiceHostEndpoint(serverPort), editor);
+            var patchingClientLogic = new SharedTextEditorPatchingLogic(memberName, ServiceHostEndpoint(serverPort), editor, new ClientServerCommunication());
 
             new SharedTextEditorP2PLogic(memberName, editor, patchingClientLogic, ServiceHostEndpoint(serverPort));
 
@@ -53,7 +53,7 @@ namespace SharedTextEditor
             
                // host.Description.Behaviors.Add(new ServiceMetadataBehavior { HttpGetEnabled = true });
                 host.Description.Behaviors.Find<ServiceDebugBehavior>().IncludeExceptionDetailInFaults = true;
-                host.AddServiceEndpoint(typeof(ISharedTextEditorC2S), new NetTcpBinding(), serviceAddress);
+                host.AddServiceEndpoint(typeof(ISharedTextEditorC2S), new BasicHttpBinding(), serviceAddress);
                 host.OpenTimeout = new TimeSpan(10000);
                 
                 host.Closed += (sender, args) =>
@@ -79,7 +79,7 @@ namespace SharedTextEditor
 
         private static string ServiceHostAddress(int port )
         {
-           return "net.tcp://localhost:" + port; 
+           return "http://localhost:" + port; 
         }
 
         private static string ServiceHostEndpoint(int port)
@@ -91,7 +91,7 @@ namespace SharedTextEditor
         private static int GetRandomPortForServer()
         {
             var random = new Random();
-            return random.Next(4000, 6000);
+            return random.Next(9000, 9010);
         }
     }
 }

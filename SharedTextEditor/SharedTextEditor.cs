@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Linq;
 
@@ -13,6 +14,8 @@ namespace SharedTextEditor
         private readonly string _memberName;
         private bool _connected;
         private bool _isUpdatingEditor = false;
+        private DateTime _lastUpdate;
+        private DateTime _delayedUpdate;
         
 
         public SharedTextEditor(string memberName)
@@ -88,10 +91,32 @@ namespace SharedTextEditor
             }
         }
 
-        private void SendMessage(string documentId, string text)
+        private void SendMessage(string documentId)
+        {
+            if (_lastUpdate <= DateTime.Now.AddMilliseconds(-150))
+            {
+                SendMessageIfNotUpdating(documentId);
+            }
+            else if (_lastUpdate > _delayedUpdate)
+            {
+                _delayedUpdate = _lastUpdate.AddMilliseconds(150);
+                Task.Delay(TimeSpan.FromMilliseconds(150)).ContinueWith(x =>
+                {
+                    if (_lastUpdate <= _delayedUpdate)
+                    {
+                        SendMessageIfNotUpdating(documentId);
+                    }
+                });
+            }
+        }
+
+        private void SendMessageIfNotUpdating(string documentId)
         {
             if (!_isUpdatingEditor && UpdateDocument != null)
             {
+                var text = _textBoxes[documentId].Text;
+                System.Diagnostics.Debug.Print(text);
+                _lastUpdate = DateTime.Now;
                 UpdateDocument(this, new UpdateDocumentRequest
                 {
                     DocumentId = documentId,
@@ -149,6 +174,14 @@ namespace SharedTextEditor
             return ok;
         }
 
+        public void ReloadDocument(string documentId)
+        {
+            CloseDocument(documentId);
+            OpenFindDocumentTab(documentId,
+                "\n Need to reload the document with id \"" + documentId + "\", was out of synch for too long."
+                + "\n Please be patient ...");
+        }
+
         public void CloseDocument(string documentId)
         {
             CloseTab(documentId);
@@ -172,10 +205,17 @@ namespace SharedTextEditor
             var textBox = new TextBox
             {
                 Multiline = true,
-                Dock = DockStyle.Fill
+                Dock = DockStyle.Fill,
+                ShortcutsEnabled = true
             };
-            textBox.TextChanged += (object sender, EventArgs e) => SendMessage(documentId, textBox.Text);
-           
+            textBox.TextChanged += (object sender, EventArgs e) => SendMessage(documentId);
+            textBox.KeyDown += (sender, e) =>
+            {
+                if (e.Control && e.KeyCode == Keys.A)
+                {
+                    textBox.SelectAll();
+                }
+            };
             tabPage.Controls.Add(textBox);
 
             _textBoxes.Add(documentId, textBox);
@@ -195,27 +235,32 @@ namespace SharedTextEditor
 
             if (ok)
             {
-                var tabPage = new TabPage(documentId)
-                {
-                    Name = documentId,
-                    Text = documentId,
-                };
-                tabControl.Controls.Add(tabPage);
-                tabControl.SelectedTab = tabPage;
+                OpenFindDocumentTab(documentId, "\n Searching document with id \"" + documentId + "\"."
+                       + "\n Please be patient ...");
+            }
+        }
 
-                var label = new Label
-                {
-                    Text = "\n Searching document with id " + documentId + "."
-                           +"\n Please be patient ...",
-                    Dock = DockStyle.Fill,
-                };
-                tabPage.Controls.Add(label);
+        private void OpenFindDocumentTab(string documentId, string text)
+        {
+            var tabPage = new TabPage(documentId)
+            {
+                Name = documentId,
+                Text = documentId,
+            };
+            tabControl.Controls.Add(tabPage);
+            tabControl.SelectedTab = tabPage;
 
-                _tabPages.Add(documentId, tabPage);
-                if (FindDocumentRequest != null)
-                {
-                    FindDocumentRequest(this, documentId);
-                }
+            var label = new Label
+            {
+                Text = text,
+                Dock = DockStyle.Fill,
+            };
+            tabPage.Controls.Add(label);
+
+            _tabPages.Add(documentId, tabPage);
+            if (FindDocumentRequest != null)
+            {
+                FindDocumentRequest(this, documentId);
             }
         }
 

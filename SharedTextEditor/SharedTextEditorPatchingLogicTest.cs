@@ -31,29 +31,32 @@ namespace SharedTextEditor
             const string initialContent = "test";
             const string contentA1 = "tests";
             const string owner = "max";
-            const string host = "net.tcp://localhost:9000";
+            const string host = "http://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             var diffMatchPath = new diff_match_patch();
             var editor = MockRepository.GenerateStub<SharedTextEditor>();
             editor.Stub(x => x.GetText(documentId)).Return(initialContent);
-
+            var communication = MockRepository.GenerateStub<IClientServerCommunication>();
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner, host, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner, host, editor, communication);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
             {
                 DocumentId = documentId,
                 Content = initialContent,
-                Owner = owner
+                Owner = owner,
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
             {
                 DocumentId = documentId,
                 MemberName = memberId,
+                PreviousRevisionId = 1,
                 PreviousHash = hash,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
@@ -76,30 +79,33 @@ namespace SharedTextEditor
             const string contentB1 = "testi";
             const string resultingContent = "testsi";
             const string owner = "max";
-            const string host = "net.tcp://localhost:9000";
+            const string host = "http://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             var diffMatchPath = new diff_match_patch();
             var editor = MockRepository.GenerateStub<SharedTextEditor>();
             editor.Stub(x => x.GetText(documentId)).Return(initialContent).Repeat.Once();
             editor.Stub(x => x.GetText(documentId)).Return(contentA1).Repeat.Once();
-
+            var communication = MockRepository.GenerateStub<IClientServerCommunication>();
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner, host, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner, host, editor, communication);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
             {
                 DocumentId = documentId,
                 Content = initialContent,
-                Owner = owner
+                Owner = owner,
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
             {
                 DocumentId = documentId,
                 MemberName = memberIdA,
+                PreviousRevisionId = 1,
                 PreviousHash = hash,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
@@ -108,6 +114,7 @@ namespace SharedTextEditor
             {
                 DocumentId = documentId,
                 MemberName = memberIdB,
+                PreviousRevisionId = 1,
                 PreviousHash = hash,
                 Patch = diffMatchPath.patch_make(initialContent, contentB1)
             });
@@ -138,23 +145,26 @@ namespace SharedTextEditor
             var editor = MockRepository.GenerateStub<SharedTextEditor>();
             editor.Stub(x => x.GetText(documentId)).Return(initialContent).Repeat.Once();
             editor.Stub(x => x.GetText(documentId)).Return(contentB1).Repeat.Once();
-            
+            var communication = MockRepository.GenerateStub<IClientServerCommunication>();
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner,host, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner, host, editor, communication);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
             {
                 DocumentId = documentId,
                 Content = initialContent,
-                Owner = owner
+                Owner = owner,
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
             {
                 DocumentId = documentId,
                 MemberName = memberIdB,
+                PreviousRevisionId = 1,
                 PreviousHash = hash,
                 Patch = diffMatchPath.patch_make(initialContent, contentB1)
             });
@@ -163,6 +173,7 @@ namespace SharedTextEditor
             {
                 DocumentId = documentId,
                 MemberName = memberIdA,
+                PreviousRevisionId = 1,
                 PreviousHash = hash,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
@@ -176,7 +187,7 @@ namespace SharedTextEditor
         }
 
         [Test]
-        public void UpdateRequestServer_ExistingIsXA1B1UpdateRequestA1A2_PatchXA1A2B1()
+        public void UpdateRequestServer_ExistingIsXA1B1UpdateRequestA2_PatchXA1A2B1()
         {
             const string memberIdA = "1";
             const string memberIdB = "2";
@@ -188,7 +199,7 @@ namespace SharedTextEditor
             const string contentA1B1 = "testsi";
             const string resultingContent = "teststi";
             const string owner = "max";
-            const string host = "net.tcp://localhost:9000";
+            const string host = "http://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] initialHash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             byte[] hashA1 = sha1.ComputeHash(Encoding.UTF8.GetBytes(contentA1));
@@ -197,17 +208,19 @@ namespace SharedTextEditor
             editor.Stub(x => x.GetText(documentId)).Return(initialContent).Repeat.Once();
             editor.Stub(x => x.GetText(documentId)).Return(contentA1).Repeat.Once();
             editor.Stub(x => x.GetText(documentId)).Return(contentA1B1).Repeat.Once();
-
+            var communication = MockRepository.GenerateStub<IClientServerCommunication>();
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner, host, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner, host, editor, communication);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
             {
                 DocumentId = documentId,
                 Content = initialContent,
-                Owner = owner
+                Owner = owner,
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
@@ -215,6 +228,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
 
@@ -223,6 +237,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdB,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentB1)
             });
 
@@ -231,6 +246,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = hashA1,
+                PreviousRevisionId = 2,
                 Patch = diffMatchPath.patch_make(contentA1, contentA2)
             });
 
@@ -256,7 +272,7 @@ namespace SharedTextEditor
             const string contentA1A2 = "testst";
             const string resultingContent = "testsit";
             const string owner = "max";
-            const string host = "net.tcp://localhost:9000";
+            const string host = "http://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] initialHash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             byte[] hashA1 = sha1.ComputeHash(Encoding.UTF8.GetBytes(contentA1));
@@ -265,16 +281,19 @@ namespace SharedTextEditor
             editor.Stub(x => x.GetText(documentId)).Return(initialContent).Repeat.Once();
             editor.Stub(x => x.GetText(documentId)).Return(contentA1).Repeat.Once();
             editor.Stub(x => x.GetText(documentId)).Return(contentA1A2).Repeat.Once();
+            var communication = MockRepository.GenerateStub<IClientServerCommunication>();
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner, host, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner, host, editor, communication);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
             {
                 DocumentId = documentId,
                 Content = initialContent,
-                Owner = owner
+                Owner = owner,
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
@@ -282,6 +301,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
 
@@ -290,6 +310,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = hashA1,
+                PreviousRevisionId = 2,
                 Patch = diffMatchPath.patch_make(contentA1, contentA2)
             });
 
@@ -298,6 +319,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdB,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentB1)
             });
 
@@ -326,7 +348,7 @@ namespace SharedTextEditor
             const string contentA1B1A2 = "teststi";
             const string resultingContent = "teststi ";
             const string owner = "max";
-            const string host = "net.tcp://localhost:9000";
+            const string host = "http://localhost:9000";
             SHA1 sha1 = new SHA1CryptoServiceProvider();
             byte[] initialHash = sha1.ComputeHash(Encoding.UTF8.GetBytes(initialContent));
             byte[] hashA1 = sha1.ComputeHash(Encoding.UTF8.GetBytes(contentA1));
@@ -336,17 +358,19 @@ namespace SharedTextEditor
             editor.Stub(x => x.GetText(documentId)).Return(contentA1).Repeat.Once();
             editor.Stub(x => x.GetText(documentId)).Return(contentA1B1).Repeat.Once();
             editor.Stub(x => x.GetText(documentId)).Return(contentA1B1A2).Repeat.Once();
-
+            var communication = MockRepository.GenerateStub<IClientServerCommunication>();
 
             //act
-            var logic = new SharedTextEditorPatchingLogic(owner,host, editor);
+            var logic = new SharedTextEditorPatchingLogic(owner, host, editor, communication);
 
             editor.Raise(x => x.FindDocumentRequest += null, editor, documentId);
             logic.OpenDocument(new DocumentDto
             {
                 DocumentId = documentId,
                 Content = initialContent,
-                Owner = owner
+                Owner = owner,
+                OwnerHost = host,
+                RevisionId = 1
             });
 
             logic.UpdateRequest(new UpdateDto
@@ -354,6 +378,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentA1)
             });
 
@@ -362,6 +387,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdB,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentB1)
             });
 
@@ -370,6 +396,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdA,
                 PreviousHash = hashA1,
+                PreviousRevisionId = 2,
                 Patch = diffMatchPath.patch_make(contentA1, contentA2)
             });
 
@@ -378,6 +405,7 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 MemberName = memberIdC,
                 PreviousHash = initialHash,
+                PreviousRevisionId = 1,
                 Patch = diffMatchPath.patch_make(initialContent, contentC1)
             });
 
