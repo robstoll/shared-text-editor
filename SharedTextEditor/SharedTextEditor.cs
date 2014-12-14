@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Linq;
 
@@ -12,18 +13,15 @@ namespace SharedTextEditor
 
         private readonly string _memberName;
         private bool _connected;
+        private bool _isUpdatingEditor = false;
+        private DateTime _lastUpdate;
+        private DateTime _delayedUpdate;
         
 
         public SharedTextEditor(string memberName)
         {
             InitializeComponent();
             _memberName = memberName;
-        }
-
-
-        public void MemberHasDocument(string documentId, string memberName)
-        {
-            //TODO 
         }
 
         private delegate void IntDelegate(int number);
@@ -47,7 +45,22 @@ namespace SharedTextEditor
                 return;
             }
 
-            _textBoxes[documentId].Text = content;
+            if (_tabPages.ContainsKey(documentId))
+            {
+                _isUpdatingEditor = true;
+                if (_textBoxes.ContainsKey(documentId))
+                {
+                    _textBoxes[documentId].Text = content;     
+                }
+                else
+                {
+                    //opened new document
+                    CloseTab(documentId);
+                    OpenTab(documentId);
+                    _textBoxes[documentId].Text = content;
+                }
+                _isUpdatingEditor = false;
+            }
         }
 
         private void btnConnect_Click(object sender, EventArgs e)
@@ -78,10 +91,32 @@ namespace SharedTextEditor
             }
         }
 
-        private void SendMessage(string documentId, string text)
+        private void SendMessage(string documentId)
         {
-            if (UpdateDocument != null)
+            if (_lastUpdate <= DateTime.Now.AddMilliseconds(-150))
             {
+                SendMessageIfNotUpdating(documentId);
+            }
+            else if (_lastUpdate > _delayedUpdate)
+            {
+                _delayedUpdate = _lastUpdate.AddMilliseconds(150);
+                Task.Delay(TimeSpan.FromMilliseconds(150)).ContinueWith(x =>
+                {
+                    if (_lastUpdate <= _delayedUpdate)
+                    {
+                        SendMessageIfNotUpdating(documentId);
+                    }
+                });
+            }
+        }
+
+        private void SendMessageIfNotUpdating(string documentId)
+        {
+            if (!_isUpdatingEditor && UpdateDocument != null)
+            {
+                var text = _textBoxes[documentId].Text;
+                System.Diagnostics.Debug.Print(text);
+                _lastUpdate = DateTime.Now;
                 UpdateDocument(this, new UpdateDocumentRequest
                 {
                     DocumentId = documentId,
@@ -92,23 +127,13 @@ namespace SharedTextEditor
 
         private void btnCreate_Click(object sender, EventArgs e)
         {
-            var ok = true;
             var documentId = txtId.Text;
-            if (_textBoxes.ContainsKey(documentId))
-            {
-                //TODO ask if current document shall be closed
-                if (ok)
-                {
-                    tabControl.TabPages.Remove(_tabPages[documentId]);
-                    _tabPages.Remove(documentId);
-                    _textBoxes.Remove(documentId);
-
-                    if (RemoveDocument != null)
-                    {
-                        RemoveDocument(this, documentId);
-                    }
-                }
-            }
+            var ok = ValidateDocumentId(
+                documentId,
+                "A document with the same id \"" + documentId +
+                "\" is already open. Do you want to close the current document and create a new one?",
+                "Close current document?"
+                );
 
             if (ok)
             {
@@ -117,6 +142,53 @@ namespace SharedTextEditor
                     CreateDocument(this, documentId);
                 }
                 OpenTab(documentId);
+            }
+        }
+
+        private bool ValidateDocumentId(string documentId, string message, string title)
+        {
+            
+            bool ok = !string.IsNullOrEmpty(documentId);
+            if (!ok)
+            {
+                MessageBox.Show(
+                    "Please provide a document Id - document id was empty.",
+                    "Document Id missing",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            else if (_tabPages.ContainsKey(documentId))
+            {
+                var result = MessageBox.Show(
+                    message,
+                    title,
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+                ok = result == DialogResult.Yes;
+                if (ok)
+                {
+                    CloseDocument(documentId);
+                }
+            }
+
+            return ok;
+        }
+
+        public void ReloadDocument(string documentId)
+        {
+            CloseDocument(documentId);
+            OpenFindDocumentTab(documentId,
+                "\n Need to reload the document with id \"" + documentId + "\", was out of synch for too long."
+                + "\n Please be patient ...");
+        }
+
+        public void CloseDocument(string documentId)
+        {
+            CloseTab(documentId);
+
+            if (RemoveDocument != null)
+            {
+                RemoveDocument(this, documentId);
             }
         }
 
@@ -130,10 +202,20 @@ namespace SharedTextEditor
             tabControl.Controls.Add(tabPage);
             tabControl.SelectedTab = tabPage;
 
-            var textBox = new TextBox();
-            textBox.TextChanged += (object sender, EventArgs e) => SendMessage(documentId, textBox.Text);
-            textBox.Multiline = true;
-            textBox.Dock = DockStyle.Fill;
+            var textBox = new TextBox
+            {
+                Multiline = true,
+                Dock = DockStyle.Fill,
+                ShortcutsEnabled = true
+            };
+            textBox.TextChanged += (object sender, EventArgs e) => SendMessage(documentId);
+            textBox.KeyDown += (sender, e) =>
+            {
+                if (e.Control && e.KeyCode == Keys.A)
+                {
+                    textBox.SelectAll();
+                }
+            };
             tabPage.Controls.Add(textBox);
 
             _textBoxes.Add(documentId, textBox);
@@ -142,23 +224,53 @@ namespace SharedTextEditor
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
+            
             var documentId = txtId.Text;
-            var tabPage = new TabPage(documentId);
-            tabPage.Container.Add(new Label
-            {
-                Text = "Searching document with id " + documentId + ".\nPlease be patient..."
-            });
-            _tabPages.Add(documentId, tabPage);
+            var ok = ValidateDocumentId(
+                documentId,
+                "A document with the same id " + documentId +
+                " is already open. Do you want to close the current document and open the new one?",
+                "Close current document?"
+                );
 
+            if (ok)
+            {
+                OpenFindDocumentTab(documentId, "\n Searching document with id \"" + documentId + "\"."
+                       + "\n Please be patient ...");
+            }
+        }
+
+        private void OpenFindDocumentTab(string documentId, string text)
+        {
+            var tabPage = new TabPage(documentId)
+            {
+                Name = documentId,
+                Text = documentId,
+            };
+            tabControl.Controls.Add(tabPage);
+            tabControl.SelectedTab = tabPage;
+
+            var label = new Label
+            {
+                Text = text,
+                Dock = DockStyle.Fill,
+            };
+            tabPage.Controls.Add(label);
+
+            _tabPages.Add(documentId, tabPage);
             if (FindDocumentRequest != null)
             {
                 FindDocumentRequest(this, documentId);
             }
         }
 
-        public void CloseTab(string documentId)
+        private delegate void StringDelegate(string documentId);
+
+        private void CloseTab(string documentId)
         {
             tabControl.TabPages.Remove(_tabPages[documentId]);
+            _tabPages.Remove(documentId);
+            _textBoxes.Remove(documentId);
         }
 
         public string GetText(string documentId)
@@ -176,6 +288,15 @@ namespace SharedTextEditor
         public event EventHandler<string> CreateDocument;
         public event EventHandler<string> RemoveDocument;
         public event EventHandler<UpdateDocumentRequest> UpdateDocument;
+
+        private void SharedTextEditor_KeyDown(object sender, KeyEventArgs e)
+        {
+            var index = tabControl.SelectedIndex;
+            if (index!= -1 && e.Control && e.KeyCode == Keys.W )
+            {
+                CloseDocument(tabControl.GetControl(index).Name);
+            }
+        }
 
     }
 

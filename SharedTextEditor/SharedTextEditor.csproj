@@ -70,9 +70,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientServerCommunication.cs" />
     <Compile Include="SharedTextEditorP2PLogic.cs" />
     <Compile Include="SharedTextEditorPatchingLogic.cs" />
-    <Compile Include="SharedTextEditorPatchingTest.cs" />
+    <Compile Include="SharedTextEditorPatchingLogicTest.cs" />
     <Compile Include="DiffMatchPatch.cs" />
     <Compile Include="DiffMatchPatchTest.cs" />
     <Compile Include="Document.cs" />
