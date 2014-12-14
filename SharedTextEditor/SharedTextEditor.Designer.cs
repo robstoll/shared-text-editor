@@ -115,8 +115,10 @@
             this.Controls.Add(this.label1);
             this.Controls.Add(this.txtId);
             this.Controls.Add(this.btnConnect);
+            this.KeyPreview = true;
             this.Name = "SharedTextEditor";
             this.Text = "Shared Text Editor";
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SharedTextEditor_KeyDown);
             this.ResumeLayout(false);
             this.PerformLayout();
 

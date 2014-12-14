@@ -6,7 +6,7 @@ using DiffMatchPatch;
 
 namespace SharedTextEditor
 {
-    [ServiceContract(Namespace = "http://com.sharedtexteditor", CallbackContract = typeof(ISharedTextEditorP2P))]
+    [ServiceContract(CallbackContract = typeof(ISharedTextEditorP2P))]
     public interface ISharedTextEditorP2P
     {
         [OperationContract(IsOneWay = true)]
@@ -22,7 +22,7 @@ namespace SharedTextEditor
         void SynchronizeMemberList(string member);
 
         [OperationContract(IsOneWay = true)]
-        void FindDocument(string documentId, string memberName);
+        void FindDocument(string host, string documentId, string memberName);
 
     }
 
@@ -30,11 +30,11 @@ namespace SharedTextEditor
     {
     }
 
-     [ServiceContract(Namespace = "http://com.sharedtexteditor", CallbackContract = typeof(ISharedTextEditorP2P))]
+    [ServiceContract(SessionMode = SessionMode.Allowed)]
     public interface ISharedTextEditorC2S
     {
         [OperationContract(IsOneWay = true)]
-        void FindDocument(string documentId, string memberName);
+        void FindDocument(string host, string documentId, string memberName);
 
         [OperationContract(IsOneWay = true)]
         void UpdateRequest(UpdateDto dto);
@@ -42,7 +42,8 @@ namespace SharedTextEditor
         [OperationContract(IsOneWay = true)]
         void AckRequest(AcknowledgeDto dto);
 
-         event EventHandler<string> FindDocumentRequest;
+         [OperationContract(IsOneWay = true)]
+         void OpenDocument(DocumentDto dto);
     }
 
     [DataContract(Namespace = "http://com.sharedtexteditor")]
@@ -52,9 +53,16 @@ namespace SharedTextEditor
         public string DocumentId { get; set; }
 
         [DataMember]
+        public int RevisionId { get; set; }
+
+        [DataMember]
         public string Content { get; set; }
+
         [DataMember]
         public string Owner { get; set; }
+
+        [DataMember]
+        public string OwnerHost { get; set; }
     }
 
     [DataContract(Namespace = "http://com.sharedtexteditor")]
@@ -64,10 +72,16 @@ namespace SharedTextEditor
         public string DocumentId { get; set; }
 
         [DataMember]
+        public int PreviousRevisionId { get; set; }
+
+        [DataMember]
         public byte[] PreviousHash { get; set; }
 
         [DataMember]
         public byte[] NewHash { get; set; }
+
+        [DataMember]
+        public int NewRevisionId { get; set; }
     }
 
 
@@ -79,13 +93,22 @@ namespace SharedTextEditor
         public String MemberName { get; set; }
 
         [DataMember]
+        public String MemberHost { get; set; }
+
+        [DataMember]
         public string DocumentId { get; set; }
+
+        [DataMember]
+        public int PreviousRevisionId { get; set; }
 
         [DataMember]
         public byte[] PreviousHash { get; set; }
 
         [DataMember]
         public byte[] NewHash { get; set; }
+
+        [DataMember]
+        public int NewRevisionId { get; set; }
 
         [DataMember]
         public List<Patch> Patch { get; set; }

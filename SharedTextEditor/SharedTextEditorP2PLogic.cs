@@ -36,8 +36,10 @@ namespace SharedTextEditor
  
         private readonly SharedTextEditor _editor;
 
+        private readonly string _c2shost;
 
-        public SharedTextEditorP2PLogic(string memberName,  SharedTextEditor editor, ISharedTextEditorC2S clientService)
+
+        public SharedTextEditorP2PLogic(string memberName,  SharedTextEditor editor, ISharedTextEditorC2S clientService, string c2sHost)
         {
             _memberName = memberName;
          
@@ -46,7 +48,7 @@ namespace SharedTextEditor
             _editor.DisconnectFromP2P += Editor_DisconnectFromP2P;
             _editor.FindDocumentRequest += Editor_FindDocumentRequest;
             _clientService = clientService;
-            _clientService.FindDocumentRequest += Editor_FindDocumentRequest;
+            _c2shost = c2sHost;
         }
 
         private void Editor_ConnectToP2P(object sender, EventArgs e)
@@ -61,7 +63,7 @@ namespace SharedTextEditor
 
         private void Editor_FindDocumentRequest(object sender, string documentId)
         {
-            _p2pChannel.FindDocument(documentId, _memberName);
+            _p2pChannel.FindDocument(_c2shost, documentId, _memberName);
         }
 
         //this method gets called from a background thread to 
@@ -141,10 +143,15 @@ namespace SharedTextEditor
             _editor.UpdateNumberOfEditors(_connectedMembers.Count);
         }
 
-        public void FindDocument(string documentId, string memberName)
+        public void FindDocument(string host, string documentId, string memberName)
         {
+            if (host.Equals(_c2shost))
+            {
+                return;
+            }
             //using client/server communication to send document to given memberName
-            _clientService.FindDocument(documentId, memberName);
+            _clientService.FindDocument(host, documentId, memberName);
+            
         }
     }
 }
