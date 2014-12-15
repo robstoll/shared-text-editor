@@ -36,6 +36,38 @@ namespace SharedTextEditor
             lblNumber.Text = number.ToString();
         }
 
+        public void ServerUnreachable(string documentId)
+        {
+            var title = "Server unreachable";
+            var result = MessageBox.Show(
+                 "The server responsible for your document '" + documentId +
+                 "' has become unreachable. Do you want to take ownership?",
+                 title,
+                 MessageBoxButtons.YesNo,
+                 MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                if (TakeOwnershipForDocument != null)
+                {
+                    TakeOwnershipForDocument(this, documentId);
+                }
+               
+                return;
+            }
+
+            result = MessageBox.Show(
+                 "Do you want to try reloading the document from another server? This will close your current version of the document.",
+                 title,
+                 MessageBoxButtons.YesNo,
+                 MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                ReloadDocument(documentId);
+            }
+        }
+
         private delegate void UpdateConnectionStateDelegate(bool connected);
       
         public void UpdateConnectionState(bool connected)
@@ -58,7 +90,7 @@ namespace SharedTextEditor
             {
                 MessageBox.Show(
                     "Can't connect to Mesh! Please try again..",
-                    "P2p Error",
+                    "P2P Error",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
                 btnConnect.Text = "Connect";
@@ -316,6 +348,7 @@ namespace SharedTextEditor
         public event EventHandler<string> FindDocumentRequest;
         public event EventHandler<string> CreateDocument;
         public event EventHandler<string> RemoveDocument;
+        public event EventHandler<string> TakeOwnershipForDocument;
         public event EventHandler<UpdateDocumentRequest> UpdateDocument;
 
         private void SharedTextEditor_KeyDown(object sender, KeyEventArgs e)

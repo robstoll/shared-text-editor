@@ -12,13 +12,54 @@ The editor is implemented using C# .Net and the Windows Communication Foundation
 
 ##Architecture
 
+
 ###Communication
 
 As previously mentioned the communication of the editor is implemented using WCF technologies. In order to fulfill the requirement for automatic document discovery between multiple editing clients we use NetPeerTcpBinding, which has been supported since .NET Framework 3.0. It provides everything we need in order to discover clients within the same LAN and broadcast requests for document discovery to all possible hosts. Once a client has started editing a document it communicates with the owner of the document via HTTP using WCF BasicHttpBinding. Clients are sending their patches to the owner and the owner in turn sends the applied patches via multicast to the other known editors as well as an acknowledgement to the client who send the corresponding update. Channeling the document update through the owner should help to avoid patching conflicts and avoid unnecessary broadcast messages if possible.
 
+#### WCF Contracts
 
-###Update Logic
-The editors use the open source Diff, Match and patch libraries from Google Inc. which provide robust algorithms to perform the operations required for synchronizing plain text. Creating patches reduces the amount of data transferred and allows the changes to be applied without relying on static indexes within the text.
+**P2P**
+For discovering documents and clients the following contract is used:
+```cs
+        [OperationContract(IsOneWay = true)]
+        void Connect(string member);
+
+        [OperationContract(IsOneWay = true)]
+        void Disconnect(string member);
+
+        [OperationContract(IsOneWay = true)]
+        void InitializeMesh();
+        
+        [OperationContract(IsOneWay = true)]
+        void SynchronizeMemberList(string member);
+
+        [OperationContract(IsOneWay = true)]
+        void FindDocument(string host, string documentId, string memberName);
+```
+**Client/Server**
+
+For the one-to-one communication between an editor and the owner of a document the following WCF contract is used:
+```cs
+    [ServiceContract(SessionMode = SessionMode.Allowed)]
+    public interface ISharedTextEditorC2S
+    {
+        [OperationContract(IsOneWay = true)]
+        void FindDocument(string host, string documentId, string memberName);
+
+        [OperationContract(IsOneWay = true)]
+        void UpdateRequest(UpdateDto dto);
+
+        [OperationContract(IsOneWay = true)]
+        void AckRequest(AcknowledgeDto dto);
+
+         [OperationContract(IsOneWay = true)]
+         void OpenDocument(DocumentDto dto);
+    }
+```
+
+###Update/Sync Logic
+The editors use the open source Diff, Match and patch libraries from Google Inc. which provide robust algorithms to perform the operations required for synchronizing plain text. These algorithmns implement the principles of Operational Transformation which also represents a core concept behind colloparative software by the company such as Google Docs and Google Wave. Creating patches reduces the amount of data transferred and allows the changes to be applied without relying on static indexes within the text.
 
 ###User Interface
 
@@ -34,7 +75,7 @@ code.google.com/p/google-diff-match-patch
  
 
 ##Known issues
--   open a document if there are multiple owner with the document. The owner which serves the document faster is chosen
+-   Open a document if there are multiple owners with the same document name. The owner responds to the document discovery response first is chosen.
 
 ##Time spent
 

@@ -35,7 +35,9 @@ namespace SharedTextEditor
             _editor.CreateDocument += Editor_CreateDocument;
             _editor.RemoveDocument += Editor_RemoveDocument;
             _editor.UpdateDocument += Editor_UpdateDocument;
+            _editor.TakeOwnershipForDocument += Editor_TakeOwnershipForDocument;
         }
+
 
         private void Editor_UpdateDocument(object sender, UpdateDocumentRequest request)
         {
@@ -97,6 +99,12 @@ namespace SharedTextEditor
                 _documents.Remove(documentId);
             }
         }
+
+        private void Editor_TakeOwnershipForDocument(object sender, string documentId)
+        {
+            TakeOwnershipForDocument(documentId);
+        }
+
 
         public void FindDocument(string host, string documentId, string memberName)
         {
@@ -182,6 +190,11 @@ namespace SharedTextEditor
                     ApplyUpdate(document, dto);
                 }
             }
+        }
+
+        private void TakeOwnershipForDocument(string documenId)
+        {
+            _documents[documenId].Owner = _memberName;
         }
 
         private void CreatePatchForUpdate(Document document, UpdateDto updateDto)
@@ -535,8 +548,7 @@ namespace SharedTextEditor
             }
             catch (EndpointNotFoundException)
             {
-                // Ignore offline server for now - TODO decide how to handle 
-
+                _editor.ServerUnreachable(document.Id);
             }
         }
 

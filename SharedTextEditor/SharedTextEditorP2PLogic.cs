@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.ServiceModel;
+using System.ServiceModel.Channels;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,7 +55,7 @@ namespace SharedTextEditor
 
         private void Editor_ConnectToP2P(object sender, EventArgs e)
         {
-          ConnectToMesh();
+            ConnectToMesh();
         }
 
         private void Editor_DisconnectFromP2P(object sender, EventArgs e)
@@ -118,12 +119,12 @@ namespace SharedTextEditor
 
         private void ostat_Offline(object sender, EventArgs e)
         {
-
             Console.WriteLine("P2P member went offline");
         }
 
         private void ostat_Online(object sender, EventArgs e)
         {
+            
             //TODO how to distinguish which members are editing a certain document?
             Console.WriteLine("P2P member came online");
             //broadcasting join to network
