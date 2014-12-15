@@ -20,6 +20,7 @@ As previously mentioned the communication of the editor is implemented using WCF
 #### WCF Contracts
 
 **P2P**
+
 For discovering documents and clients the following contract is used:
 ```cs
         [OperationContract(IsOneWay = true)]

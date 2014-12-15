@@ -16,7 +16,7 @@ namespace SharedTextEditor
         private bool _isUpdatingEditor = false;
         private DateTime _lastUpdate;
         private DateTime _delayedUpdate;
-        
+        private const string DocumentNamePlaceholder = "Document name";
 
         public SharedTextEditor(string memberName)
         {
@@ -82,6 +82,7 @@ namespace SharedTextEditor
             if (connected)
             {
                 txtId.Enabled = true;
+                txtId.Text = DocumentNamePlaceholder;
                 btnOpen.Enabled = true;
                 btnCreate.Enabled = true;
                 btnConnect.Text = "Disconnect";
@@ -360,6 +361,21 @@ namespace SharedTextEditor
             }
         }
 
+        private void txtId_Enter(object sender, EventArgs e)
+        {
+            if (txtId.Text == DocumentNamePlaceholder)
+            {
+                txtId.Text = "";
+            }
+        }
+
+        private void txtId_Leave(object sender, EventArgs e)
+        {
+            if (txtId.Text == "")
+            {
+                txtId.Text = DocumentNamePlaceholder;
+            }
+        }
     }
 
     public class UpdateDocumentRequest
