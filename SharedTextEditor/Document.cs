@@ -44,6 +44,8 @@ namespace SharedTextEditor
 
         public UpdateDto OutOfSyncUpdate { get; set; }
 
+        public AcknowledgeDto OutOfSyncAcknowledge { get; set; }
+
         private readonly Dictionary<int, Revision> _revisions = new Dictionary<int, Revision>();
         private readonly Dictionary<string, string> _editingHosts = new Dictionary<string, string>();
 
