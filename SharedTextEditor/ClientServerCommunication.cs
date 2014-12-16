@@ -22,7 +22,7 @@ namespace SharedTextEditor
         {
             using (var cf = GetChannelFactory(host))
             {
-                cf.CreateChannel().UpdateRequest(updateDto);
+               cf.CreateChannel().UpdateRequest(updateDto);
             }
         }
 

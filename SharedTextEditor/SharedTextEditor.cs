@@ -16,7 +16,7 @@ namespace SharedTextEditor
         private bool _isUpdatingEditor = false;
         private DateTime _lastUpdate;
         private DateTime _delayedUpdate;
-        
+        private const string DocumentNamePlaceholder = "Document name";
 
         public SharedTextEditor(string memberName)
         {
@@ -29,11 +29,73 @@ namespace SharedTextEditor
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new IntDelegate(UpdateNumberOfEditors));
+                BeginInvoke(new IntDelegate(UpdateNumberOfEditors), new object[] { number });
                 return;
             }
 
             lblNumber.Text = number.ToString();
+        }
+
+        public void ServerUnreachable(string documentId)
+        {
+            var title = "Server unreachable";
+            var result = MessageBox.Show(
+                 "The server responsible for your document '" + documentId +
+                 "' has become unreachable. Do you want to take ownership?",
+                 title,
+                 MessageBoxButtons.YesNo,
+                 MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                if (TakeOwnershipForDocument != null)
+                {
+                    TakeOwnershipForDocument(this, documentId);
+                }
+               
+                return;
+            }
+
+            result = MessageBox.Show(
+                 "Do you want to try reloading the document from another server? This will close your current version of the document.",
+                 title,
+                 MessageBoxButtons.YesNo,
+                 MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                ReloadDocument(documentId);
+            }
+        }
+
+        private delegate void UpdateConnectionStateDelegate(bool connected);
+      
+        public void UpdateConnectionState(bool connected)
+        {
+             if (InvokeRequired)
+            {
+                BeginInvoke(new UpdateConnectionStateDelegate(UpdateConnectionState), new object[] { connected });
+                return;
+            }
+
+            btnConnect.Enabled = true;
+            if (connected)
+            {
+                txtId.Enabled = true;
+                txtId.Text = DocumentNamePlaceholder;
+                btnOpen.Enabled = true;
+                btnCreate.Enabled = true;
+                btnConnect.Text = "Disconnect";
+            }
+            else
+            {
+                MessageBox.Show(
+                    "Can't connect to Mesh! Please try again..",
+                    "P2P Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                btnConnect.Text = "Connect";
+            }
         }
 
         private delegate void UpdateTextDelegate(string documentId, string content);
@@ -41,7 +103,7 @@ namespace SharedTextEditor
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new UpdateTextDelegate(UpdateText));
+                BeginInvoke(new UpdateTextDelegate(UpdateText), new object[] { documentId, content });
                 return;
             }
 
@@ -70,19 +132,19 @@ namespace SharedTextEditor
                 _connected = true;
                 if (ConnectToP2P != null)
                 {
-                    ConnectToP2P(this, EventArgs.Empty);
+                    var that = this;
+                    Task.Run(()=>ConnectToP2P(that, EventArgs.Empty));
                 }
-                txtId.Enabled = true;
-                btnOpen.Enabled = true;
-                btnCreate.Enabled = true;
-                btnConnect.Text = "Disconnect";
+          
+                btnConnect.Enabled = false;
+                btnConnect.Text = "Connecting";
             }
             else
             {
                 _connected = false;
                 if (DisconnectFromP2P != null)
                 {
-                    DisconnectFromP2P(this, EventArgs.Empty);
+                    Task.Run(()=>DisconnectFromP2P(this, EventArgs.Empty));
                 }
                 btnConnect.Text = "Connect";
                 btnCreate.Enabled = false;
@@ -287,6 +349,7 @@ namespace SharedTextEditor
         public event EventHandler<string> FindDocumentRequest;
         public event EventHandler<string> CreateDocument;
         public event EventHandler<string> RemoveDocument;
+        public event EventHandler<string> TakeOwnershipForDocument;
         public event EventHandler<UpdateDocumentRequest> UpdateDocument;
 
         private void SharedTextEditor_KeyDown(object sender, KeyEventArgs e)
@@ -298,6 +361,21 @@ namespace SharedTextEditor
             }
         }
 
+        private void txtId_Enter(object sender, EventArgs e)
+        {
+            if (txtId.Text == DocumentNamePlaceholder)
+            {
+                txtId.Text = "";
+            }
+        }
+
+        private void txtId_Leave(object sender, EventArgs e)
+        {
+            if (txtId.Text == "")
+            {
+                txtId.Text = DocumentNamePlaceholder;
+            }
+        }
     }
 
     public class UpdateDocumentRequest

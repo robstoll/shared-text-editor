@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.ServiceModel;
+using System.ServiceModel.Channels;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SharedTextEditor
@@ -71,51 +73,61 @@ namespace SharedTextEditor
         //by the binding info in the app.config
         private void ConnectToMesh()
         {
+            try
+            {
+                //since this window is the service behavior use it as the instance context
+                _instanceContext = new InstanceContext(this);
 
-            //since this window is the service behavior use it as the instance context
-            _instanceContext = new InstanceContext(this);
+                //use the binding from the app.config with default settings
+                _binding = new NetPeerTcpBinding("SharedTextEditorBinding");
 
-            //use the binding from the app.config with default settings
-            _binding = new NetPeerTcpBinding("SharedTextEditorBinding");
+                //create a new channel based off of our composite interface "IChatChannel" and the 
+                //endpoint specified in the app.config
+                _channelFactory = new DuplexChannelFactory<ISharedTextEditorP2PChannel>(_instanceContext,
+                    "SharedTextEditorEndpointP2P");
 
-            //create a new channel based off of our composite interface "IChatChannel" and the 
-            //endpoint specified in the app.config
-            _channelFactory = new DuplexChannelFactory<ISharedTextEditorP2PChannel>(_instanceContext,
-                "SharedTextEditorEndpointP2P");
+                var endpointAddress = new EndpointAddress(_channelFactory.Endpoint.Address.ToString());
 
-            var endpointAddress = new EndpointAddress(_channelFactory.Endpoint.Address.ToString());
+                _channelFactory.Endpoint.Address = endpointAddress;
+                _p2pChannel = _channelFactory.CreateChannel();
 
-            _channelFactory.Endpoint.Address = endpointAddress;
-            _p2pChannel = _channelFactory.CreateChannel();
+                //the next lines setup the event handlers for handling online/offline events
+                //in the MS P2P world, online/offline is defined as follows:
+                //Online: the client is _connected to one or more peers in the mesh
+                //Offline: the client is all alone in the mesh
+                _statusHandler = _p2pChannel.GetProperty<IOnlineStatus>();
 
-            //the next 3 lines setup the event handlers for handling online/offline events
-            //in the MS P2P world, online/offline is defined as follows:
-            //Online: the client is _connected to one or more peers in the mesh
-            //Offline: the client is all alone in the mesh
-            _statusHandler = _p2pChannel.GetProperty<IOnlineStatus>();
-            _statusHandler.Online += ostat_Online;
-            _statusHandler.Offline += ostat_Offline;
+                if (_statusHandler != null)
+                {
+                    _statusHandler.Online += ostat_Online;
+                    _statusHandler.Offline += ostat_Offline;
+                }
 
-            //this is an empty unhandled method on the service interface.
-            //why? because for some reason p2p clients don't try to connect to the mesh
-            //until the first service method call.  so to facilitate connecting i call this method
-            //to get the ball rolling.
-            _p2pChannel.InitializeMesh();
+                //this is an empty unhandled method on the service interface.
+                //why? because for some reason p2p clients don't try to connect to the mesh
+                //until the first service method call.  so to facilitate connecting i call this method
+                //to get the ball rolling.
+
+                _p2pChannel.InitializeMesh();
+                _editor.UpdateConnectionState(true);
+            }
+            catch (Exception)
+            {
+                _editor.UpdateConnectionState(false);
+            }
         }
 
         private void ostat_Offline(object sender, EventArgs e)
         {
-            // we could update a status bar or animate an icon to 
-            //indicate to the user they have disconnected from the mesh
-            //TODO update Editor? Number of editors?
-            Console.WriteLine("offline");
+            Console.WriteLine("P2P member went offline");
         }
 
         private void ostat_Online(object sender, EventArgs e)
         {
+            
             //TODO how to distinguish which members are editing a certain document?
-            Console.WriteLine("online");
-            //broadcasting a join method call to the mesh members
+            Console.WriteLine("P2P member came online");
+            //broadcasting join to network
             _p2pChannel.Connect(_memberName);
         }
 

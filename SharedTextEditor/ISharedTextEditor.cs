@@ -23,7 +23,6 @@ namespace SharedTextEditor
 
         [OperationContract(IsOneWay = true)]
         void FindDocument(string host, string documentId, string memberName);
-
     }
 
     public interface ISharedTextEditorP2PChannel : ISharedTextEditorP2P, IClientChannel
