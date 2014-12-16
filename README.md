@@ -55,7 +55,7 @@ For the one-to-one communication between an editor and the owner of a document t
 The editors use the open source Diff, Match and patch libraries from Google Inc. which provide robust algorithms to perform the operations required for synchronizing plain text. These algorithmns implement the principles of Operational Transformation which also represents a core concept behind colloparative software by the company such as Google Docs and Google Wave. Creating patches reduces the amount of data transferred and allows the changes to be applied without relying on static indexes within the text.
 
 The following figure depicts a few use case scenarios and is used as basis to explain how operational transformation was implemented:
-![(use case](https://github.com/matthiasleitner/shared-text-editor/blob/improvements/SharedTextEditor/Operational%20Transformation%20-%20Problem.png)
+![(use case](https://github.com/matthiasleitner/shared-text-editor/blob/master/SharedTextEditor/Operational%20Transformation%20-%20Problem.png)
 
 User A is the owner of the document in the above scenario. That means he has created it using the "Create" Button. User B and C both open the document (with the "Open" Button) - depicted by the <get doc> in the above figure.
 
@@ -102,21 +102,21 @@ google-diff-match-patch
 code.google.com/p/google-diff-match-patch
 
  
-
 ##Known issues
 -   Open a document if there are multiple owners with the same document name. The owner responds to the document discovery response first is chosen.
 -   some error handling is missing. For instance, if a user sends an erroneous patch to the server (e.g. delete everyhting on line 100 but there are only 10 lines), then the server just swallows the patch without informing the client that it was not applied. The client would then wait forever for an acknowledge
 -   No multi caret support. The position where a user is currently editing is not visualized within the editor using multiple colored carets as in Google Docs.
+
 ##Time spent
 
 
 Planing/Research: 8h
 
-Implementation: 36h
+Implementation: 38h
 
-Testing/Bugfixes: 10h
+Testing/Bugfixes: 12h
 
-Documentation: 4h
+Documentation: 5h
 
 ##User Guide
 
