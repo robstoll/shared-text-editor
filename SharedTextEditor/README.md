@@ -113,6 +113,7 @@ code.google.com/p/google-diff-match-patch
 
 ##Known issues
 -   Open a document if there are multiple owners with the same document name. The owner responds to the document discovery response first is chosen.
+-   some error handling is missing. For instance, if a user sends an erroneous patch to the server (e.g. delete everyhting on line 100 but there are only 10 lines), then the server just swallows the patch without informing the client that it was not applied. The client would then wait forever for an acknowledge
 
 ##Time spent
 
