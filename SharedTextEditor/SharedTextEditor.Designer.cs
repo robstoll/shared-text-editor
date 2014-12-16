@@ -111,6 +111,7 @@
             this.tabControl.SelectedIndex = 0;
             this.tabControl.Size = new System.Drawing.Size(1294, 788);
             this.tabControl.TabIndex = 7;
+            this.tabControl.SelectedIndexChanged += new System.EventHandler(this.tabControl_SelectedIndexChanged);
             // 
             // SharedTextEditor
             // 

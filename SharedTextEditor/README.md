@@ -23,18 +23,10 @@ As previously mentioned the communication of the editor is implemented using WCF
 
 For discovering documents and clients the following contract is used:
 ```cs
-        [OperationContract(IsOneWay = true)]
-        void Connect(string member);
-
-        [OperationContract(IsOneWay = true)]
-        void Disconnect(string member);
-
+ 
         [OperationContract(IsOneWay = true)]
         void InitializeMesh();
         
-        [OperationContract(IsOneWay = true)]
-        void SynchronizeMemberList(string member);
-
         [OperationContract(IsOneWay = true)]
         void FindDocument(string host, string documentId, string memberName);
 ```
@@ -114,7 +106,7 @@ code.google.com/p/google-diff-match-patch
 ##Known issues
 -   Open a document if there are multiple owners with the same document name. The owner responds to the document discovery response first is chosen.
 -   some error handling is missing. For instance, if a user sends an erroneous patch to the server (e.g. delete everyhting on line 100 but there are only 10 lines), then the server just swallows the patch without informing the client that it was not applied. The client would then wait forever for an acknowledge
-
+-   No multi caret support. The position where a user is currently editing is not visualized within the editor using multiple colored carets as in Google Docs.
 ##Time spent
 
 
@@ -138,10 +130,12 @@ Documentation: 4h
 
 - If you want to join an existing document with the given name click 'Open'. If you want to create a new document click 'Create'
 
+- Start editing the document in the text arear
+
 - To close an open tab, type "CTRL+W"
 
-##Screenshots
-
+##Screenshot
+![(Screenshot)](https://github.com/matthiasleitner/shared-text-editor/blob/master/SharedTextEditor/screenshot.png)
 
 
 

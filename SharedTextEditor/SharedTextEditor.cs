@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Web.UI.WebControls;
 using System.Windows.Forms;
 using System.Linq;
+using Label = System.Windows.Forms.Label;
+using TextBox = System.Windows.Forms.TextBox;
 
 namespace SharedTextEditor
 {
@@ -10,6 +13,7 @@ namespace SharedTextEditor
     {
         private readonly Dictionary<string, TextBox> _textBoxes = new Dictionary<string, TextBox>();
         private readonly Dictionary<string, TabPage> _tabPages = new Dictionary<string, TabPage>();
+        private readonly Dictionary<string, int> _editorCount = new Dictionary<string, int>();
 
         private readonly string _memberName;
         private bool _connected;
@@ -24,16 +28,22 @@ namespace SharedTextEditor
             _memberName = memberName;
         }
 
-        private delegate void IntDelegate(int number);
-        public void UpdateNumberOfEditors(int number)
+        private delegate void UpdateNumberOfEditorsDelegate(string documentId, int number);
+        public void UpdateNumberOfEditors(string documentId, int number)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new IntDelegate(UpdateNumberOfEditors), new object[] { number });
+                BeginInvoke(new UpdateNumberOfEditorsDelegate(UpdateNumberOfEditors), new object[] { documentId, number });
                 return;
             }
 
-            lblNumber.Text = number.ToString();
+
+             _editorCount[documentId] = number;
+
+            if (tabControl.SelectedTab != null && tabControl.SelectedTab.Name == documentId)
+            {
+                ShowEditorCountForDocumentId(documentId);
+            }
         }
 
         public void ServerUnreachable(string documentId)
@@ -282,6 +292,8 @@ namespace SharedTextEditor
 
             _textBoxes.Add(documentId, textBox);
             _tabPages.Add(documentId, tabPage);
+
+            ShowEditorCountForDocumentId(documentId);
         }
 
         private void btnOpen_Click(object sender, EventArgs e)
@@ -344,6 +356,14 @@ namespace SharedTextEditor
             return null;
         }
 
+        private void ShowEditorCountForDocumentId(string documentId)
+        {
+            if (_editorCount.ContainsKey(documentId))
+            {
+                lblNumber.Text = _editorCount[documentId].ToString();
+            }
+        }
+
         public event EventHandler<EventArgs> ConnectToP2P;
         public event EventHandler<EventArgs> DisconnectFromP2P;
         public event EventHandler<string> FindDocumentRequest;
@@ -375,6 +395,18 @@ namespace SharedTextEditor
             {
                 txtId.Text = DocumentNamePlaceholder;
             }
+        }
+
+
+        private void tabControl_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var control = (TabControl)sender;
+
+            if (control.SelectedTab == null) return;
+
+            var documentId = control.SelectedTab.Name;
+
+            ShowEditorCountForDocumentId(documentId);
         }
     }
 

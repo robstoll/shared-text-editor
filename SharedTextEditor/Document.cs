@@ -42,6 +42,10 @@ namespace SharedTextEditor
 
         public string OwnerHost { get; set; }
 
+        public int EditorCount {
+            get { return _editingHosts.Count + 1; }
+        }
+
         public UpdateDto OutOfSyncUpdate { get; set; }
 
         public AcknowledgeDto OutOfSyncAcknowledge { get; set; }

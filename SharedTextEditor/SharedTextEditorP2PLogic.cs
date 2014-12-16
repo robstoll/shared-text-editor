@@ -31,8 +31,6 @@ namespace SharedTextEditor
 
         public delegate void NoArgDelegate();
         public delegate void StringDelegate(string value);
-
-        private readonly HashSet<string> _connectedMembers = new HashSet<string>();
         
         private readonly string _memberName;
  
@@ -47,7 +45,6 @@ namespace SharedTextEditor
          
             _editor = editor;
             _editor.ConnectToP2P += Editor_ConnectToP2P;
-            _editor.DisconnectFromP2P += Editor_DisconnectFromP2P;
             _editor.FindDocumentRequest += Editor_FindDocumentRequest;
             _clientService = clientService;
             _c2shost = c2sHost;
@@ -56,11 +53,6 @@ namespace SharedTextEditor
         private void Editor_ConnectToP2P(object sender, EventArgs e)
         {
             ConnectToMesh();
-        }
-
-        private void Editor_DisconnectFromP2P(object sender, EventArgs e)
-        {
-            _p2pChannel.Disconnect(_memberName);
         }
 
         private void Editor_FindDocumentRequest(object sender, string documentId)
@@ -124,35 +116,13 @@ namespace SharedTextEditor
 
         private void ostat_Online(object sender, EventArgs e)
         {
-            
             //TODO how to distinguish which members are editing a certain document?
             Console.WriteLine("P2P member came online");
-            //broadcasting join to network
-            _p2pChannel.Connect(_memberName);
-        }
-
-        public void Connect(string member)
-        {
-            _connectedMembers.Add(member);
-            _editor.UpdateNumberOfEditors(_connectedMembers.Count);
-            _p2pChannel.SynchronizeMemberList(_memberName);
-        }
-
-        public void Disconnect(string member)
-        {
-            _connectedMembers.Remove(member);
-            _editor.UpdateNumberOfEditors(_connectedMembers.Count);
         }
 
         public void InitializeMesh()
         {
             Console.WriteLine("initialize mesh");
-        }
-
-        public void SynchronizeMemberList(string member)
-        {
-            _connectedMembers.Add(member);
-            _editor.UpdateNumberOfEditors(_connectedMembers.Count);
         }
 
         public void FindDocument(string host, string documentId, string memberName)

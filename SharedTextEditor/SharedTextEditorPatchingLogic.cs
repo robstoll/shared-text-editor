@@ -36,8 +36,8 @@ namespace SharedTextEditor
             _editor.RemoveDocument += Editor_RemoveDocument;
             _editor.UpdateDocument += Editor_UpdateDocument;
             _editor.TakeOwnershipForDocument += Editor_TakeOwnershipForDocument;
+          ;
         }
-
 
         private void Editor_UpdateDocument(object sender, UpdateDocumentRequest request)
         {
@@ -84,7 +84,8 @@ namespace SharedTextEditor
                 DocumentId = documentId,
                 RevisionId = 1,
                 Owner = _memberName,
-                OwnerHost = _serverHost
+                OwnerHost = _serverHost,
+                EditorCount = 1
             });
         }
 
@@ -113,13 +114,16 @@ namespace SharedTextEditor
             {
                 Document document = _documents[documentId];
                 document.AddEditor(memberName, host);
+
+                _editor.UpdateNumberOfEditors(document.Id, document.EditorCount); 
                 _communication.OpenDocument(host, new DocumentDto
                 {
                     Content = document.Content,
                     DocumentId = documentId,
                     RevisionId = document.CurrentRevisionId,
                     Owner = _memberName,
-                    OwnerHost = _serverHost
+                    OwnerHost = _serverHost,
+                    EditorCount = document.EditorCount
                 });
 
             }
@@ -166,6 +170,9 @@ namespace SharedTextEditor
                     }
                 });
             }
+
+            _editor.UpdateNumberOfEditors(document.Id, document.EditorCount); 
+
             _documents.Add(dto.DocumentId, document);
         }
 
@@ -180,6 +187,9 @@ namespace SharedTextEditor
             if (_documents.ContainsKey(dto.DocumentId))
             {
                 var document = _documents[dto.DocumentId];
+  
+                _editor.UpdateNumberOfEditors(document.Id, dto.EditorCount); 
+
                 //I am the owner/server?
                 if (document.Owner == _memberName)
                 {
@@ -316,6 +326,7 @@ namespace SharedTextEditor
                     NewRevisionId = updateDto.NewRevisionId,
                     NewHash = updateDto.NewHash,
                     Patch = updateDto.Patch,
+                    EditorCount = document.EditorCount
                 };
 
                 foreach (var editorHost in document.Editors().Values)

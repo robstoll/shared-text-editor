@@ -10,17 +10,8 @@ namespace SharedTextEditor
     public interface ISharedTextEditorP2P
     {
         [OperationContract(IsOneWay = true)]
-        void Connect(string member);
-
-        [OperationContract(IsOneWay = true)]
-        void Disconnect(string member);
-
-        [OperationContract(IsOneWay = true)]
         void InitializeMesh();
         
-        [OperationContract(IsOneWay = true)]
-        void SynchronizeMemberList(string member);
-
         [OperationContract(IsOneWay = true)]
         void FindDocument(string host, string documentId, string memberName);
     }
@@ -62,6 +53,9 @@ namespace SharedTextEditor
 
         [DataMember]
         public string OwnerHost { get; set; }
+
+        [DataMember]
+        public int EditorCount { get; set; }
     }
 
     [DataContract(Namespace = "http://com.sharedtexteditor")]
@@ -111,5 +105,8 @@ namespace SharedTextEditor
 
         [DataMember]
         public List<Patch> Patch { get; set; }
+
+        [DataMember]
+        public int EditorCount { get; set; }
     }
 }
