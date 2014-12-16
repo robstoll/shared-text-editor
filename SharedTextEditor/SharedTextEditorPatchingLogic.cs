@@ -397,11 +397,18 @@ namespace SharedTextEditor
             }
 
             //check whether we have an out of sync update which is based on the given update (so we could apply it as well)
-            if (document.OutOfSyncUpdate!= null && IsFirstPreviousOfSecond(updateDto, document.OutOfSyncUpdate))
+            if (document.OutOfSyncUpdate != null && IsFirstPreviousOfSecond(updateDto, document.OutOfSyncUpdate))
             {
                 var outOfSynUpdate = document.OutOfSyncUpdate;
                 document.OutOfSyncUpdate = null;
                 MergeUpdate(document, outOfSynUpdate);
+            }
+
+            var outOfSyncAcknowledge = document.OutOfSyncAcknowledge;
+            if (outOfSyncAcknowledge != null && IsFirstPreviousOfSecond(updateDto, document.PendingUpdate))
+            {
+                ConfirmPendingUpdate(document, outOfSyncAcknowledge);
+                document.OutOfSyncAcknowledge = null;   
             }
         }
 
@@ -509,35 +516,46 @@ namespace SharedTextEditor
             if (_documents.ContainsKey(dto.DocumentId))
             {
                 var document = _documents[dto.DocumentId];
-                if (WeAreNotOwnerAndCorrespondsToPendingUpdate(dto, document))
+                if (document.Owner != _memberName && document.PendingUpdate != null)
                 {
-                    var result = _diffMatchPatch.patch_apply(document.PendingUpdate.Patch, document.Content);
-                    if (CheckResultIsValidOtherwiseReOpen(result, dto.DocumentId))
+                    if (document.PendingUpdate.PreviousRevisionId == dto.PreviousRevisionId && document.PendingUpdate.PreviousHash.SequenceEqual(dto.PreviousHash))
                     {
-                        document.PendingUpdate.NewRevisionId = dto.NewRevisionId;
-                        document.PendingUpdate.NewHash = dto.NewHash;
-                        UpdateDocument(document, document.PendingUpdate, result);
+                        ConfirmPendingUpdate(document, dto);
                     }
-                    var currentText = _editor.GetText(dto.DocumentId);
-                    if (document.Content != currentText)
+                    else if (document.OutOfSyncAcknowledge != null)
                     {
-                        //send next update
-                        var updateDto = CreateUpdateDto(document, currentText);
-                        document.PendingUpdate = updateDto;
-
-                        SendUpdateToDocumentOwner(document, updateDto);  
+                        document.OutOfSyncAcknowledge = dto;
                     }
                     else
                     {
-                        document.PendingUpdate = null;
+                        ReOpenDocument(document.Id);
                     }
                 }
             }
         }
 
-        private bool WeAreNotOwnerAndCorrespondsToPendingUpdate(AcknowledgeDto dto, Document document)
+        private void ConfirmPendingUpdate(Document document, AcknowledgeDto dto)
         {
-            return document.Owner != _memberName && document.PendingUpdate.PreviousHash.SequenceEqual(dto.PreviousHash);
+            var result = _diffMatchPatch.patch_apply(document.PendingUpdate.Patch, document.Content);
+            if (CheckResultIsValidOtherwiseReOpen(result, dto.DocumentId))
+            {
+                document.PendingUpdate.NewRevisionId = dto.NewRevisionId;
+                document.PendingUpdate.NewHash = dto.NewHash;
+                UpdateDocument(document, document.PendingUpdate, result);
+            }
+            var currentText = _editor.GetText(dto.DocumentId);
+            if (document.Content != currentText)
+            {
+                //send next update
+                var updateDto = CreateUpdateDto(document, currentText);
+                document.PendingUpdate = updateDto;
+
+                SendUpdateToDocumentOwner(document, updateDto);
+            }
+            else
+            {
+                document.PendingUpdate = null;
+            }
         }
 
         private void SendUpdateToDocumentOwner(Document document, UpdateDto dto)
