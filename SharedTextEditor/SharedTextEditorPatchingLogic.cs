@@ -151,6 +151,7 @@ namespace SharedTextEditor
                 Owner = dto.Owner,
                 OwnerHost = dto.OwnerHost,
                 Content = dto.Content,
+
             };
             if (dto.Owner == _memberName)
             {
@@ -163,15 +164,19 @@ namespace SharedTextEditor
                         MemberName = _memberName,
                         MemberHost = _serverHost,
                         PreviousRevisionId = 0,
-                        PreviousHash = new byte[] { },
+                        PreviousHash = new byte[] {},
                         NewHash = hash,
                         NewRevisionId = dto.RevisionId,
                         Patch = new List<Patch>(),
                     }
                 });
+                _editor.UpdateNumberOfEditors(document.Id, document.EditorCount); 
+            }
+            else
+            {
+                _editor.UpdateNumberOfEditors(document.Id, dto.EditorCount); 
             }
 
-            _editor.UpdateNumberOfEditors(document.Id, document.EditorCount); 
 
             _documents.Add(dto.DocumentId, document);
         }
@@ -188,15 +193,16 @@ namespace SharedTextEditor
             {
                 var document = _documents[dto.DocumentId];
   
-                _editor.UpdateNumberOfEditors(document.Id, dto.EditorCount); 
-
+                 
                 //I am the owner/server?
                 if (document.Owner == _memberName)
                 {
+                    _editor.UpdateNumberOfEditors(document.Id, document.EditorCount);
                     CreatePatchForUpdate(document, dto);
                 }
                 else
                 {
+                    _editor.UpdateNumberOfEditors(document.Id, dto.EditorCount);
                     ApplyUpdate(document, dto);
                 }
             }

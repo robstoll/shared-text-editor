@@ -24,21 +24,37 @@ namespace SharedTextEditor
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            var serverPort = GetRandomPortForServer();
-
             var editor = new SharedTextEditor(memberName);
 
-            var patchingClientLogic = new SharedTextEditorPatchingLogic(memberName, ServiceHostEndpoint(serverPort), editor, new ClientServerCommunication());
 
-            new SharedTextEditorP2PLogic(memberName, editor, patchingClientLogic, ServiceHostEndpoint(serverPort));
+            bool hostOpen;
+            var portRetries = 0;
+            do
+            {
+                var serverPort = GetRandomPortForServer();
+                var patchingClientLogic = new SharedTextEditorPatchingLogic(memberName, ServiceHostEndpoint(serverPort), editor, new ClientServerCommunication());
+                new SharedTextEditorP2PLogic(memberName, editor, patchingClientLogic, ServiceHostEndpoint(serverPort));
+                hostOpen = StartServerHost(serverPort, memberName, editor, patchingClientLogic);
+                portRetries++;
+            } while (!hostOpen && portRetries < 10);
 
-            StartServerHost(serverPort, memberName, editor, patchingClientLogic);
+
+            if (!hostOpen)
+            {
+                MessageBox.Show(
+                  "Unable to find open port to start service host",
+                  "No port available",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                Application.Exit();
+            }
 
             Application.Run(editor);         
         }
 
 
-        private static void StartServerHost(int port,  string memberName, SharedTextEditor editor, SharedTextEditorPatchingLogic patchingLogic)
+        private static bool StartServerHost(int port,  string memberName, SharedTextEditor editor, SharedTextEditorPatchingLogic patchingLogic)
         {
             var serviceHost = ServiceHostAddress(port);
             var serviceUrl = new Uri(serviceHost);
@@ -71,15 +87,12 @@ namespace SharedTextEditor
                     {
                         Console.WriteLine(ea.Address);
                     }
-                }
-                catch (AddressAlreadyInUseException){
-                    MessageBox.Show(
-                      "Unable to start service on " + port + " because the port is already in use",
-                      "Port already taken",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning);
 
-                    Application.Exit();
+                    return true;
+                }
+                catch (AddressAlreadyInUseException)
+                {
+                    return false;
                 }
         }
 
