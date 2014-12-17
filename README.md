@@ -108,6 +108,12 @@ code.google.com/p/google-diff-match-patch
 -   some error handling is missing. For instance, if a user sends an erroneous patch to the server (e.g. delete everyhting on line 100 but there are only 10 lines), then the server just swallows the patch without informing the client that it was not applied. The client would then wait forever for an acknowledge
 -   No multi caret support. The position where a user is currently editing is not visualized within the editor using multiple colored carets as in Google Docs.
 
+- In order to support multiple clients on the same machine the port for the client to server communication is randomly choosen between 9000 and 9010. If the port is already in use the client will retry 10 times to find another free port. In order to allow access to ports for the BasicHTTPBinding you need to run the following command for range of ports you want to allow:
+
+```cs
+@for /L %%i in (9000,1,9010) do netsh http add urlacl url=http://+:%%i/ sddl="G:S-1-5-32-545"
+```
+
 ##Time spent
 
 
