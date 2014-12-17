@@ -33,8 +33,14 @@ namespace SharedTextEditor
             {
                 var serverPort = GetRandomPortForServer();
                 var patchingClientLogic = new SharedTextEditorPatchingLogic(memberName, ServiceHostEndpoint(serverPort), editor, new ClientServerCommunication());
-                new SharedTextEditorP2PLogic(memberName, editor, patchingClientLogic, ServiceHostEndpoint(serverPort));
+                
                 hostOpen = StartServerHost(serverPort, memberName, editor, patchingClientLogic);
+
+                if (hostOpen)
+                {
+                    new SharedTextEditorP2PLogic(memberName, editor, patchingClientLogic, ServiceHostEndpoint(serverPort));
+                }
+
                 portRetries++;
             } while (!hostOpen && portRetries < 10);
 
