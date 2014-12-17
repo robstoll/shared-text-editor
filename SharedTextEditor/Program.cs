@@ -84,22 +84,34 @@ namespace SharedTextEditor
                 };
 
 
-                try
-                {
-                    host.Open();
+            try
+            {
+                host.Open();
 
-                    Console.WriteLine("Service up and running at:");
-                    foreach (var ea in host.Description.Endpoints)
-                    {
-                        Console.WriteLine(ea.Address);
-                    }
-
-                    return true;
-                }
-                catch (AddressAlreadyInUseException)
+                Console.WriteLine("Service up and running at:");
+                foreach (var ea in host.Description.Endpoints)
                 {
-                    return false;
+                    Console.WriteLine(ea.Address);
                 }
+
+                return true;
+            }
+            catch (AddressAlreadyInUseException)
+            {
+                return false;
+            }
+            catch (AddressAccessDeniedException)
+            {
+                MessageBox.Show(
+                "Unable to use port " + port + ", please allow access to ports between 9000 and 9010.",
+                "No port available",
+                  MessageBoxButtons.RetryCancel,
+                  MessageBoxIcon.Warning);
+
+                return false;
+            }
+
+
         }
 
 
