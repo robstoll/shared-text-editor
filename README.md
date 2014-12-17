@@ -15,7 +15,7 @@ The editor is implemented using C# .Net and the Windows Communication Foundation
 
 ###Communication
 
-As previously mentioned the communication of the editor is implemented using WCF technologies. In order to fulfill the requirement for automatic document discovery between multiple editing clients we use NetPeerTcpBinding, which has been supported since .NET Framework 3.0. It provides everything we need in order to discover clients within the same LAN and broadcast requests for document discovery to all possible hosts. Once a client has started editing a document it communicates with the owner of the document via HTTP using WCF BasicHttpBinding. Clients are sending their patches to the owner and the owner in turn sends the applied patches via multicast to the other known editors as well as an acknowledgement to the client who send the corresponding update. Channeling the document update through the owner should help to avoid patching conflicts and avoid unnecessary broadcast messages if possible.
+As previously mentioned the communication of the editor is implemented using WCF technologies. In order to fulfill the requirement for automatic document discovery between multiple editing clients we use NetPeerTcpBinding, which has been supported since .NET Framework 3.0. It provides everything we need in order to discover clients within the same LAN and broadcast requests for document discovery to all possible hosts. Once a client has started editing a document it communicates with the owner of the document via HTTP using WCF BasicHttpBinding. Clients are sending their patches to the owner and the owner in turn sends the applied patches via multicast to the other known editors as well as an acknowledgement to the client who send the corresponding update. Channeling the document update through the owner should help to avoid patching conflicts and avoid unnecessary broadcast messages if possible. When patch is received via the UpdateRequest contract the sender will receive feedback via the AckRequest contract, letting the client know if the patch was applied successfully.
 
 #### WCF Contracts
 
@@ -27,6 +27,7 @@ For discovering documents and clients the following contract is used:
         [OperationContract(IsOneWay = true)]
         void InitializeMesh();
         
+        // Look for the given documentId within the p2p mesh
         [OperationContract(IsOneWay = true)]
         void FindDocument(string host, string documentId, string memberName);
 ```
@@ -37,17 +38,17 @@ For the one-to-one communication between an editor and the owner of a document t
     [ServiceContract(SessionMode = SessionMode.Allowed)]
     public interface ISharedTextEditorC2S
     {
-        [OperationContract(IsOneWay = true)]
-        void FindDocument(string host, string documentId, string memberName);
-
+        // Transmits a patch to other clients
         [OperationContract(IsOneWay = true)]
         void UpdateRequest(UpdateDto dto);
 
+        // The callback to the UpdateRequest contract
         [OperationContract(IsOneWay = true)]
         void AckRequest(AcknowledgeDto dto);
 
-         [OperationContract(IsOneWay = true)]
-         void OpenDocument(DocumentDto dto);
+        // The response/callback to the FindDocument contract, sending the requested document back to the client
+        [OperationContract(IsOneWay = true)]
+        void OpenDocument(DocumentDto dto);
     }
 ```
 
@@ -93,7 +94,7 @@ The same prodecure applies when user C receives the update b3. The last use case
 ###User Interface
 
 The user interface is realized using the Windows Forms APIs. All the logic is decoupled from the UI and should therefore never block the user interaction.
-
+WindowsForms TabControl is used to allow opening and editing multiple documents at the same time.
 
 ##Dependencies
 

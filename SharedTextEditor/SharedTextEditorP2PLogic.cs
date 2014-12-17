@@ -14,18 +14,13 @@ namespace SharedTextEditor
     class SharedTextEditorP2PLogic : ISharedTextEditorP2P
     {
 
-        //the channel instance where we execute our service methods against
+        //p2p communication channel
         private ISharedTextEditorP2PChannel _p2pChannel;
-        //the instance context which in this case is our window since it is the service host
+    
         private InstanceContext _instanceContext;
-
         private NetPeerTcpBinding _binding;
-        //the factory to create our chat channel
         private ChannelFactory<ISharedTextEditorP2PChannel> _channelFactory;
-        //an interface provided by the channel exposing events to indicate
-        //when we have _connected or disconnected from the mesh
         private IOnlineStatus _statusHandler;
-        //a generic delegate to execute a thread against that accepts no args
 
         private readonly ISharedTextEditorC2S _clientService;
 
@@ -60,21 +55,14 @@ namespace SharedTextEditor
             _p2pChannel.FindDocument(_c2shost, documentId, _memberName);
         }
 
-        //this method gets called from a background thread to 
-        //connect the service client to the p2p mesh specified
-        //by the binding info in the app.config
         private void ConnectToMesh()
         {
             try
             {
-                //since this window is the service behavior use it as the instance context
                 _instanceContext = new InstanceContext(this);
 
-                //use the binding from the app.config with default settings
                 _binding = new NetPeerTcpBinding("SharedTextEditorBinding");
 
-                //create a new channel based off of our composite interface "IChatChannel" and the 
-                //endpoint specified in the app.config
                 _channelFactory = new DuplexChannelFactory<ISharedTextEditorP2PChannel>(_instanceContext,
                     "SharedTextEditorEndpointP2P");
 
@@ -83,10 +71,7 @@ namespace SharedTextEditor
                 _channelFactory.Endpoint.Address = endpointAddress;
                 _p2pChannel = _channelFactory.CreateChannel();
 
-                //the next lines setup the event handlers for handling online/offline events
-                //in the MS P2P world, online/offline is defined as follows:
-                //Online: the client is _connected to one or more peers in the mesh
-                //Offline: the client is all alone in the mesh
+                //setup the event handlers for handling online/offline events
                 _statusHandler = _p2pChannel.GetProperty<IOnlineStatus>();
 
                 if (_statusHandler != null)
@@ -95,11 +80,7 @@ namespace SharedTextEditor
                     _statusHandler.Offline += ostat_Offline;
                 }
 
-                //this is an empty unhandled method on the service interface.
-                //why? because for some reason p2p clients don't try to connect to the mesh
-                //until the first service method call.  so to facilitate connecting i call this method
-                //to get the ball rolling.
-
+                //call empty method to force connection to mesh
                 _p2pChannel.InitializeMesh();
                 _editor.UpdateConnectionState(true);
             }
@@ -116,7 +97,6 @@ namespace SharedTextEditor
 
         private void ostat_Online(object sender, EventArgs e)
         {
-            //TODO how to distinguish which members are editing a certain document?
             Console.WriteLine("P2P member came online");
         }
 
