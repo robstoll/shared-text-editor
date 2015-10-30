@@ -125,7 +125,7 @@ code.google.com/p/google-diff-match-patch
 - To close an open tab, type "CTRL+W"
 
 ##Screenshot
-![(Screenshot)](https://github.com/matthiasleitner/shared-text-editor/blob/master/SharedTextEditor/screenshot.png)
+![(Screenshot)](https://github.com/robstoll/shared-text-editor/blob/master/SharedTextEditor/screenshot.png)
 
 
 
